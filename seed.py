@@ -1,8 +1,7 @@
 # seed.py
-
-from datamanager.sqlite_data_manager import SQLiteDataManager
 from datamanager.models import db
 from app import create_app  # Import the create_app function from your app.py
+
 
 def seed_database(app, data_manager):
     """
@@ -48,6 +47,7 @@ def seed_database(app, data_manager):
         print("Added favorite movies for users.")
     except Exception as e:
         print(f"Error adding favorite movies: {e}")
+
 
 if __name__ == '__main__':
     # Create the Flask app and data manager

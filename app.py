@@ -1,5 +1,3 @@
-# app.py
-
 from flask import Flask, jsonify, request, render_template, url_for, redirect, flash
 from datamanager.sqlite_data_manager import SQLiteDataManager
 from datamanager.models import db
@@ -10,6 +8,7 @@ import re
 
 # Load environment variables from .env file
 load_dotenv()
+
 
 def create_app():
     app = Flask(__name__)
@@ -33,12 +32,13 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-    # Define routes...
+
 
     @app.route('/')
     def home():
         """Home page route."""
         return render_template('home.html')
+
 
     @app.route('/users')
     def users_list():
@@ -49,6 +49,7 @@ def create_app():
             user_movies[user.id] = app.data_manager.get_user_movies(user.id)
         return render_template('users_list.html', users=users, user_movies=user_movies)
 
+
     @app.route('/users/<int:user_id>')
     def user_movies(user_id):
         """Display the list of movies for a specific user."""
@@ -58,6 +59,7 @@ def create_app():
             flash("User not found!", "error")
             return redirect(url_for('users_list'))
         return render_template('user_movies.html', user=user, movies=movies)
+
 
     @app.route('/add_user', methods=['GET', 'POST'])
     def add_user():
@@ -74,6 +76,7 @@ def create_app():
             except ValueError as e:
                 flash(str(e), "error")
         return render_template('add_user.html')
+
 
     @app.route('/users/<int:user_id>/add_movie', methods=['GET', 'POST'])
     def add_movie(user_id):
@@ -145,6 +148,7 @@ def create_app():
 
         return render_template('add_movie.html', user_id=user_id)
 
+
     @app.route('/users/<int:user_id>/update_movie/<movie_id>', methods=['GET', 'POST'])
     def update_movie(user_id, movie_id):
         """Update a movie's details."""
@@ -169,6 +173,7 @@ def create_app():
             return redirect(url_for('user_movies', user_id=user_id))
         return render_template('update_movie.html', user_id=user_id, movie=movie)
 
+
     @app.route('/users/<int:user_id>/delete_movie/<movie_id>', methods=['GET', 'POST'])
     def delete_movie(user_id, movie_id):
         """Delete a movie from a user's favorites."""
@@ -178,6 +183,7 @@ def create_app():
         except ValueError as e:
             flash(str(e), "error")
         return redirect(url_for('user_movies', user_id=user_id))
+
 
     @app.route('/delete_user/<int:user_id>', methods=['GET', 'POST'])
     def delete_user(user_id):
@@ -189,13 +195,27 @@ def create_app():
             flash(str(e), "error")
         return redirect(url_for('users_list'))
 
+
     @app.errorhandler(404)
     def page_not_found(e):
         return render_template('404.html'), 404
 
+
     @app.errorhandler(500)
     def internal_server_error(e):
         return render_template('500.html'), 500
+
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        """Handle 403 Forbidden errors."""
+        return render_template('403.html', error=str(e)), 403
+
+
+    @app.errorhandler(401)
+    def unauthorized(e):
+        """Handle 401 Unauthorized errors."""
+        return render_template('401.html', error=str(e)), 401
 
     return app
 
