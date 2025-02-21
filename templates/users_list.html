@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Users List{% endblock %}
+
+{% block content %}
+<h1>Users List</h1>
+<table border="1" cellpadding="10">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Favorites</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.name }}</td>
+            <td>
+                {% if user.favorite_movies %}
+                    {{ ', '.join([movie.name for movie in user.favorite_movies]) }}
+                {% else %}
+                    No favorites yet
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('user_movies', user_id=user.id) }}">View Movies</a> |
+                <a href="{{ url_for('delete_user', user_id=user.id) }}" onclick="return confirm('Are you sure?')">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
