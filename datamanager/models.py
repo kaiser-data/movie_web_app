@@ -1,5 +1,3 @@
-# datamanager/models.py
-
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -12,7 +10,7 @@ class User(db.Model):
 
 class Movie(db.Model):
     __tablename__ = 'movies'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(50), primary_key=True)  # Change id to String
     name = db.Column(db.String(200), nullable=False)
     director = db.Column(db.String(100), nullable=False)
     year = db.Column(db.Integer, nullable=False)
@@ -22,5 +20,5 @@ class Movie(db.Model):
 user_movie = db.Table(
     'user_movie',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('movie_id', db.Integer, db.ForeignKey('movies.id'), primary_key=True)
+    db.Column('movie_id', db.String(50), db.ForeignKey('movies.id'), primary_key=True)  # Update movie_id to String
 )

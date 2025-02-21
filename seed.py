@@ -1,6 +1,6 @@
 # seed.py
 
-from datamanager.sqllite_data_manager import SQLiteDataManager
+from datamanager.sqlite_data_manager import SQLiteDataManager
 from datamanager.models import db
 from app import create_app  # Import the create_app function from your app.py
 
@@ -53,9 +53,12 @@ if __name__ == '__main__':
     # Create the Flask app and data manager
     app = create_app()
     with app.app_context():
-        data_manager = app.data_manager
+        # Drop all tables and recreate them
+        db.drop_all()  # Clear existing data
+        db.create_all()  # Recreate tables
 
         # Seed the database
+        data_manager = app.data_manager
         seed_database(app, data_manager)
 
     print("Database seeding complete!")

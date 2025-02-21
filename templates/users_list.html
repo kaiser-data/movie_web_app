@@ -19,11 +19,15 @@
             <td>{{ user.id }}</td>
             <td>{{ user.name }}</td>
             <td>
-                {% if user.favorite_movies %}
-                    {{ ', '.join(movie.name for movie in user.favorite_movies) }}
-                {% else %}
-                    No favorites yet
-                {% endif %}
+<td>
+    {% if user_movies[user.id] %}
+        {% for movie in user_movies[user.id] %}
+            {{ movie.name }}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    {% else %}
+        No favorites yet
+    {% endif %}
+</td>
             </td>
             <td>
                 <a href="{{ url_for('user_movies', user_id=user.id) }}">View Movies</a> |

@@ -30,9 +30,10 @@ class SQLiteDataManager(DataManagerInterface):
             db.session.commit()
 
     def add_movie(self, movie_data):
+        """Add a new movie to the database."""
         with self.app.app_context():
             new_movie = Movie(
-                id=movie_data.get('id'),
+                id=movie_data.get('id'),  # Accept string ID
                 name=movie_data.get('name'),
                 director=movie_data.get('director'),
                 year=movie_data.get('year'),

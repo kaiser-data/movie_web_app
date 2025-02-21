@@ -5,16 +5,21 @@
 {% block content %}
 <h1>Add a New Movie</h1>
 <form method="POST" action="{{ url_for('add_movie', user_id=user_id) }}">
-    <label for="id">ID:</label>
-    <input type="number" id="id" name="id" required><br><br>
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" required><br><br>
-    <label for="director">Director:</label>
-    <input type="text" id="director" name="director" required><br><br>
-    <label for="year">Year:</label>
-    <input type="number" id="year" name="year" required><br><br>
-    <label for="rating">Rating:</label>
-    <input type="number" step="0.1" id="rating" name="rating" required><br><br>
+    <label for="title">Movie Title:</label>
+    <input type="text" id="title" name="title" required><br><br>
+
+    <label for="name">Name (optional):</label>
+    <input type="text" id="name" name="name"><br><br>
+
+    <label for="director">Director (optional):</label>
+    <input type="text" id="director" name="director"><br><br>
+
+    <label for="year">Year (optional):</label>
+    <input type="number" id="year" name="year"><br><br>
+
+    <label for="rating">Rating (optional):</label>
+    <input type="number" step="0.1" id="rating" name="rating"><br><br>
+
     <button type="submit">Add Movie</button>
 </form>
 {% endblock %}
