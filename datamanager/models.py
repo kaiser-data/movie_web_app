@@ -18,6 +18,7 @@ class Movie(db.Model):
     year = db.Column(db.Integer, nullable=False)
     rating = db.Column(db.Float, nullable=False)
 
+# Secondary table for many-to-many relationship
 user_movie = db.Table(
     'user_movie',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),

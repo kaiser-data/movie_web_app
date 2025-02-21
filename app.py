@@ -36,8 +36,8 @@ def create_app():
 
     @app.route('/users')
     def users_list():
-        """Display a list of all users."""
         users = app.data_manager.get_all_users()
+        print(users)  # Debug: Print users data
         return render_template('users_list.html', users=users)
 
     @app.route('/users/<int:user_id>')

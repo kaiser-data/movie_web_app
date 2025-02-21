@@ -81,3 +81,18 @@ class SQLiteDataManager(DataManagerInterface):
                 db.session.commit()
             else:
                 raise ValueError(f"User with ID {user_id} does not exist.")
+
+    def add_favorite_movie(self, user_id, movie_id):
+        """Add a movie to a user's favorites."""
+        with self.app.app_context():
+            user = db.session.query(User).get(user_id)
+            movie = db.session.query(Movie).get(movie_id)
+            if user and movie:
+                if movie not in user.favorite_movies:
+                    user.favorite_movies.append(movie)
+                    db.session.commit()
+                    print(f"Added movie {movie.name} to user {user.name}'s favorites.")
+                else:
+                    print(f"Movie {movie.name} is already in user {user.name}'s favorites.")
+            else:
+                raise ValueError(f"User or Movie not found.")

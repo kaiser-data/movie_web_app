@@ -20,7 +20,7 @@
             <td>{{ user.name }}</td>
             <td>
                 {% if user.favorite_movies %}
-                    {{ ', '.join([movie.name for movie in user.favorite_movies]) }}
+                    {{ ', '.join(movie.name for movie in user.favorite_movies) }}
                 {% else %}
                     No favorites yet
                 {% endif %}
