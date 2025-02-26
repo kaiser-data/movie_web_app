@@ -13,9 +13,12 @@ load_dotenv()
 class MovieWebApp:
     def __init__(self):
         self.app = Flask(__name__)
-        self.configure_app()  # Configure the Flask app
-        self.initialize_database()  # Initialize the database and attach the data manager
-        self.register_routes()  # Register all routes for the Flask app
+        # Configure the Flask app
+        self.configure_app()
+        # Initialize the database and attach the data manager
+        self.initialize_database()
+        # Register all routes for the Flask app
+        self.register_routes()
 
     def configure_app(self):
         """Configure the Flask app."""
@@ -136,25 +139,45 @@ class MovieWebApp:
         @self.app.route('/users/<int:user_id>/update_movie/<movie_id>', methods=['GET', 'POST'])
         def update_movie(user_id, movie_id):
             """Update a movie's details."""
-            if request.method == 'POST':
-                updated_data = {
-                    'name': request.form.get('name'),
-                    'director': request.form.get('director'),
-                    'year': request.form.get('year'),
-                    'rating': request.form.get('rating')
-                }
-                try:
-                    self.data_manager.update_movie(movie_id, updated_data)
-                    flash("Movie updated successfully!", "success")
-                    return redirect(url_for('user_movies', user_id=user_id))
-                except ValueError as e:
-                    flash(str(e), "error")
-
-            # Fetch current movie details for pre-filling the form
+            # Fetch the current movie details from the database
             movie = next((m for m in self.data_manager.get_user_movies(user_id) if m.id == movie_id), None)
             if not movie:
                 flash("Movie not found!", "error")
                 return redirect(url_for('user_movies', user_id=user_id))
+
+            if request.method == 'POST':
+                # Extract form data
+                updated_data = {
+                    'name': request.form.get('name', '').strip(),
+                    'director': request.form.get('director', '').strip(),
+                    'year': request.form.get('year', '').strip(),
+                    'rating': request.form.get('rating', '').strip()
+                }
+
+                # Validate and sanitize input
+                try:
+                    # Retain existing values for fields not provided in the form
+                    if not updated_data['name']:
+                        updated_data['name'] = movie.name
+                    if not updated_data['director']:
+                        updated_data['director'] = movie.director
+                    if not updated_data['year']:
+                        updated_data['year'] = movie.year
+                    else:
+                        updated_data['year'] = int(updated_data['year'])  # Convert to integer
+                    if not updated_data['rating']:
+                        updated_data['rating'] = movie.rating
+                    else:
+                        updated_data['rating'] = float(updated_data['rating'])  # Convert to float
+
+                    # Update the movie in the database
+                    self.data_manager.update_movie(movie_id, updated_data)
+                    flash("Movie updated successfully!", "success")
+                    return redirect(url_for('user_movies', user_id=user_id))
+                except (ValueError, AttributeError) as e:
+                    flash(f"Error updating movie: {str(e)}", "error")
+
+            # Pre-fill the form with the current movie details
             return render_template('update_movie.html', user_id=user_id, movie=movie)
 
         @self.app.route('/users/<int:user_id>/delete_movie/<movie_id>', methods=['GET', 'POST'])
