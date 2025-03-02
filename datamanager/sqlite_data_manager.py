@@ -29,7 +29,6 @@ class SQLiteDataManager(DataManagerInterface):
         Returns:
             list: A list of User objects.
         """
-        # Query all users from the database
         with self.app.app_context():
             return db.session.query(User).all()
 
@@ -60,7 +59,6 @@ class SQLiteDataManager(DataManagerInterface):
         Raises:
             ValueError: If user data is invalid or missing.
         """
-        # Create and add a new user to the database
         with self.app.app_context():
             new_user = User(
                 id=user_data.get('id'),
@@ -79,7 +77,6 @@ class SQLiteDataManager(DataManagerInterface):
         Raises:
             ValueError: If movie data is invalid or missing.
         """
-        # Create and add a new movie to the database
         with self.app.app_context():
             new_movie = Movie(
                 id=movie_data.get('id'),  # Accept string ID
@@ -102,7 +99,6 @@ class SQLiteDataManager(DataManagerInterface):
         Raises:
             ValueError: If the movie does not exist.
         """
-        # Update the movie's details in the database
         with self.app.app_context():
             movie = db.session.query(Movie).get(movie_id)
             if movie:
@@ -124,7 +120,6 @@ class SQLiteDataManager(DataManagerInterface):
         Raises:
             ValueError: If the movie does not exist.
         """
-        # Delete the movie from the database
         with self.app.app_context():
             movie = db.session.query(Movie).get(movie_id)
             if movie:
@@ -143,7 +138,6 @@ class SQLiteDataManager(DataManagerInterface):
         Raises:
             ValueError: If the user does not exist.
         """
-        # Delete the user from the database
         with self.app.app_context():
             user = db.session.query(User).get(user_id)
             if user:
@@ -163,7 +157,6 @@ class SQLiteDataManager(DataManagerInterface):
         Raises:
             ValueError: If the user does not exist.
         """
-        # Update the user's details in the database
         with self.app.app_context():
             user = db.session.query(User).get(user_id)
             if user:
@@ -183,7 +176,6 @@ class SQLiteDataManager(DataManagerInterface):
         Raises:
             ValueError: If the user or movie does not exist.
         """
-        # Add the movie to the user's favorites
         with self.app.app_context():
             user = db.session.query(User).get(user_id)
             movie = db.session.query(Movie).get(movie_id)
