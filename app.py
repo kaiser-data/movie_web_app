@@ -161,14 +161,19 @@ class MovieWebApp:
                     movie_data = self._fetch_movie_data(movie_title)
 
                     if not movie_data:
+                        flash("Movie not found on OMDb!", "error")
                         return render_template('add_movie.html', user_id=user_id)
 
-                    # Override with form data if provided
-                    self._update_movie_data_from_form(movie_data, request.form)
+                    # Check if the movie already exists in the database
+                    existing_movie = self.data_manager.get_movie_by_id(movie_data['id'])
 
-                    # Add movie to database
-                    self.data_manager.add_movie(movie_data)
-                    self.data_manager.add_favorite_movie(user_id, movie_data['id'])
+                    if not existing_movie:
+                        # Add the movie to the database if it doesn't exist
+                        self.data_manager.add_movie(movie_data)
+                        existing_movie = movie_data  # The newly added movie
+
+                    # Associate the movie with the user
+                    self.data_manager.add_favorite_movie(user_id, existing_movie['id'])
 
                     flash("Movie added successfully!", "success")
                     return redirect(url_for('user_movies', user_id=user_id))
@@ -275,7 +280,8 @@ class MovieWebApp:
                 'name': data.get('Title', ''),
                 'director': data.get('Director', ''),
                 'year': year,
-                'rating': rating
+                'rating': rating,
+                'poster': data.get('Poster', '')  # Add poster URL from the API response
             }
         except requests.RequestException as e:
             self.app.logger.error(f"Error fetching movie from OMDb: {str(e)}")

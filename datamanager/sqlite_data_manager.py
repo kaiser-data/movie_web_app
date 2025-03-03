@@ -128,6 +128,19 @@ class SQLiteDataManager(DataManagerInterface):
             else:
                 raise ValueError(f"Movie with ID {movie_id} does not exist.")
 
+    def get_movie_by_id(self, movie_id):
+        """
+        Retrieve a movie by its ID from the database.
+
+        Args:
+            movie_id (str): The ID of the movie to retrieve.
+
+        Returns:
+            Movie: The movie object if found, otherwise None.
+        """
+        with self.app.app_context():
+            return Movie.query.filter_by(id=movie_id).first()
+
     def delete_user(self, user_id):
         """
         Delete a user from the database.

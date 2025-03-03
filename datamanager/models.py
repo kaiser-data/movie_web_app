@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 # Initialize the SQLAlchemy object
 db = SQLAlchemy()
 
+
 class User(db.Model):
     """
     Represents a user in the database.
@@ -18,6 +19,7 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     favorite_movies = db.relationship('Movie', secondary='user_movie', backref='users', lazy=True)
 
+
 class Movie(db.Model):
     """
     Represents a movie in the database.
@@ -28,6 +30,7 @@ class Movie(db.Model):
         director (str): The name of the director of the movie (cannot be null).
         year (int): The release year of the movie (cannot be null).
         rating (float): The rating of the movie (cannot be null).
+        poster (str): The URL to the movie poster image.
     """
     __tablename__ = 'movies'
     id = db.Column(db.String(50), primary_key=True)  # Change id to String for external IDs
@@ -35,6 +38,8 @@ class Movie(db.Model):
     director = db.Column(db.String(100), nullable=False)
     year = db.Column(db.Integer, nullable=False)
     rating = db.Column(db.Float, nullable=False)
+    poster = db.Column(db.String(255))  # Add this line for the poster URL
+
 
 # Secondary table for many-to-many relationship between users and movies
 user_movie = db.Table(
