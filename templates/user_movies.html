@@ -7,6 +7,7 @@
 <table border="1" cellpadding="10">
     <thead>
         <tr>
+            <th>Poster</th> <!-- New column for movie poster -->
             <th>Name</th>
             <th>Director</th>
             <th>Year</th>
@@ -17,6 +18,14 @@
     <tbody>
         {% for movie in movies %}
         <tr>
+            <td>
+                <!-- Display the movie poster if available -->
+                {% if movie.poster and movie.poster != 'N/A' %}
+                    <img src="{{ movie.poster }}" alt="{{ movie.name }} Poster" width="100" height="150">
+                {% else %}
+                    <span>No Poster Available</span>
+                {% endif %}
+            </td>
             <td>{{ movie.name }}</td>
             <td>{{ movie.director }}</td>
             <td>{{ movie.year }}</td>

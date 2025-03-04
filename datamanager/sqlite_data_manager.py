@@ -72,7 +72,7 @@ class SQLiteDataManager(DataManagerInterface):
         Add a new movie to the database.
 
         Args:
-            movie_data (dict): A dictionary containing movie data (id, name, director, year, rating).
+            movie_data (dict): A dictionary containing movie data (id, name, director, year, rating, poster).
 
         Raises:
             ValueError: If movie data is invalid or missing.
@@ -83,7 +83,8 @@ class SQLiteDataManager(DataManagerInterface):
                 name=movie_data.get('name'),
                 director=movie_data.get('director'),
                 year=movie_data.get('year'),
-                rating=movie_data.get('rating')
+                rating=movie_data.get('rating'),
+                poster=movie_data.get('poster', '')  # Add this line for the poster URL
             )
             db.session.add(new_movie)
             db.session.commit()
@@ -106,10 +107,10 @@ class SQLiteDataManager(DataManagerInterface):
                 movie.director = updated_data.get('director', movie.director)
                 movie.year = updated_data.get('year', movie.year)
                 movie.rating = updated_data.get('rating', movie.rating)
+                movie.poster = updated_data.get('poster', movie.poster)  # Add this line
                 db.session.commit()
             else:
                 raise ValueError(f"Movie with ID {movie_id} does not exist.")
-
     def delete_movie(self, movie_id):
         """
         Delete a movie from the database.
