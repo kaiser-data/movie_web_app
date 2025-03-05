@@ -107,10 +107,11 @@ class SQLiteDataManager(DataManagerInterface):
                 movie.director = updated_data.get('director', movie.director)
                 movie.year = updated_data.get('year', movie.year)
                 movie.rating = updated_data.get('rating', movie.rating)
-                movie.poster = updated_data.get('poster', movie.poster)  # Add this line
+                movie.poster = updated_data.get('poster', movie.poster)
                 db.session.commit()
             else:
                 raise ValueError(f"Movie with ID {movie_id} does not exist.")
+
     def delete_movie(self, movie_id):
         """
         Delete a movie from the database.

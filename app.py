@@ -6,21 +6,43 @@ from dotenv import load_dotenv
 import requests
 import re
 import logging
+from functools import wraps
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Base class for blueprints
+
+def handle_errors(f):
+    """Decorator to handle common exceptions in routes"""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except ValueError as e:
+            flash(str(e), "error")
+        except Exception as e:
+            app = Flask.current_app
+            app.logger.error(f"Error in {f.__name__}: {str(e)}")
+            flash("An unexpected error occurred. Please try again.", "error")
+
+        # Default fallback - return to previous page or home
+        return redirect(request.referrer or url_for('home'))
+
+    return decorated_function
+
+
 class BlueprintBase:
-    def __init__(self, app, data_manager, secret_key):
+    """Base class for blueprints"""
+
+    def __init__(self, app, data_manager):
         self.app = app
         self.data_manager = data_manager
-        self.secret_key = secret_key
 
     def init_app(self):
         self.register_routes()
 
-# UsersBlueprint
+
 class UsersBlueprint(BlueprintBase):
     def register_routes(self):
         @self.app.route('/')
@@ -28,73 +50,55 @@ class UsersBlueprint(BlueprintBase):
             return render_template('home.html')
 
         @self.app.route('/users')
+        @handle_errors
         def users_list():
-            try:
-                users = self.data_manager.get_all_users()
-                user_movies = {user.id: self.data_manager.get_user_movies(user.id) for user in users}
-                return render_template('users_list.html', users=users, user_movies=user_movies)
-            except Exception as e:
-                self.app.logger.error(f"Error retrieving users: {str(e)}")
-                flash("Error retrieving users. Please try again later.", "error")
-                return render_template('users_list.html', users=[], user_movies={})
+            users = self.data_manager.get_all_users()
+            user_movies = {user.id: self.data_manager.get_user_movies(user.id) for user in users}
+            return render_template('users_list.html', users=users, user_movies=user_movies)
 
         @self.app.route('/add_user', methods=['GET', 'POST'])
+        @handle_errors
         def add_user():
             if request.method == 'POST':
-                try:
-                    user_data = {
-                        'id': int(request.form['id']),
-                        'name': request.form['name'].strip()
-                    }
+                user_data = {
+                    'id': int(request.form['id']),
+                    'name': request.form['name'].strip()
+                }
 
-                    if not user_data['name']:
-                        flash("User name is required!", "error")
-                        return render_template('add_user.html')
+                if not user_data['name']:
+                    flash("User name is required!", "error")
+                    return render_template('add_user.html')
 
-                    self.data_manager.add_user(user_data)
-                    flash("User added successfully!", "success")
-                    return redirect(url_for('users_list'))
-                except ValueError as e:
-                    flash(str(e), "error")
-                except Exception as e:
-                    self.app.logger.error(f"Error adding user: {str(e)}")
-                    flash("An unexpected error occurred. Please try again.", "error")
+                self.data_manager.add_user(user_data)
+                flash("User added successfully!", "success")
+                return redirect(url_for('users_list'))
 
             return render_template('add_user.html')
 
         @self.app.route('/delete_user/<int:user_id>', methods=['GET', 'POST'])
+        @handle_errors
         def delete_user(user_id):
-            try:
-                self.data_manager.delete_user(user_id)
-                flash("User deleted successfully!", "success")
-            except ValueError as e:
-                flash(str(e), "error")
-            except Exception as e:
-                self.app.logger.error(f"Error deleting user {user_id}: {str(e)}")
-                flash("An unexpected error occurred. Please try again.", "error")
-
+            self.data_manager.delete_user(user_id)
+            flash("User deleted successfully!", "success")
             return redirect(url_for('users_list'))
 
-# MoviesBlueprint
+
 class MoviesBlueprint(BlueprintBase):
     def register_routes(self):
         @self.app.route('/users/<int:user_id>')
+        @handle_errors
         def user_movies(user_id):
-            try:
-                movies = self.data_manager.get_user_movies(user_id)
-                user = next((u for u in self.data_manager.get_all_users() if u.id == user_id), None)
+            movies = self.data_manager.get_user_movies(user_id)
+            user = next((u for u in self.data_manager.get_all_users() if u.id == user_id), None)
 
-                if not user:
-                    flash("User not found!", "error")
-                    return redirect(url_for('users_list'))
-
-                return render_template('user_movies.html', user=user, movies=movies)
-            except Exception as e:
-                self.app.logger.error(f"Error retrieving movies for user {user_id}: {str(e)}")
-                flash("Error retrieving movies. Please try again later.", "error")
+            if not user:
+                flash("User not found!", "error")
                 return redirect(url_for('users_list'))
 
+            return render_template('user_movies.html', user=user, movies=movies)
+
         @self.app.route('/users/<int:user_id>/add_movie', methods=['GET', 'POST'])
+        @handle_errors
         def add_movie(user_id):
             if request.method == 'POST':
                 movie_title = request.form.get('title', '').strip()
@@ -103,68 +107,118 @@ class MoviesBlueprint(BlueprintBase):
                     flash("Movie title is required!", "error")
                     return render_template('add_movie.html', user_id=user_id)
 
+                movie_data = self._fetch_movie_data(movie_title)
+
+                if not movie_data:
+                    return render_template('add_movie.html', user_id=user_id)
+
                 try:
-                    movie_data = self._fetch_movie_data(movie_title)
-
-                    if not movie_data:
-                        flash("Movie not found on OMDb!", "error")
-                        return render_template('add_movie.html', user_id=user_id)
-
+                    # Check if movie already exists in database
                     existing_movie = self.data_manager.get_movie_by_id(movie_data['id'])
 
-                    if not existing_movie:
+                    # Get the movie ID to use
+                    if existing_movie:
+                        # If existing_movie is an object with an id attribute
+                        if hasattr(existing_movie, 'id'):
+                            movie_id = existing_movie.id
+                        # If existing_movie is a dictionary with an 'id' key
+                        elif isinstance(existing_movie, dict) and 'id' in existing_movie:
+                            movie_id = existing_movie['id']
+                        else:
+                            # Log the type for debugging
+                            self.app.logger.error(f"Unexpected existing_movie type: {type(existing_movie)}")
+                            movie_id = str(existing_movie)  # Convert to string as fallback
+                    else:
+                        # Add new movie to database
                         self.data_manager.add_movie(movie_data)
-                        existing_movie = movie_data
+                        movie_id = movie_data['id']
 
-                    self.data_manager.add_favorite_movie(user_id, existing_movie['id'])
-                    flash("Movie added successfully!", "success")
+                    # Check if user already has this movie in favorites
+                    user_movies = self.data_manager.get_user_movies(user_id)
+
+                    # Convert movie_id to string for consistent comparison
+                    movie_id_str = str(movie_id)
+
+                    if any(str(movie.id) == movie_id_str for movie in user_movies):
+                        flash("This movie is already in your favorites!", "info")
+                    else:
+                        # Add to user's favorites
+                        self.data_manager.add_favorite_movie(user_id, movie_id)
+                        flash("Movie added successfully to your favorites!", "success")
+
                     return redirect(url_for('user_movies', user_id=user_id))
+
                 except Exception as e:
-                    self.app.logger.error(f"Error adding movie: {str(e)}")
+                    self.app.logger.error(f"Error in add_movie: {str(e)}")
                     flash(f"Error adding movie: {str(e)}", "error")
+                    return render_template('add_movie.html', user_id=user_id)
 
             return render_template('add_movie.html', user_id=user_id)
 
         @self.app.route('/users/<int:user_id>/update_movie/<movie_id>', methods=['GET', 'POST'])
+        @handle_errors
         def update_movie(user_id, movie_id):
-            try:
-                movie = next((m for m in self.data_manager.get_user_movies(user_id) if m.id == movie_id), None)
+            # Get the movie from the user's collection
+            user_movies = self.data_manager.get_user_movies(user_id)
+            movie = next((m for m in user_movies if str(m.id) == str(movie_id)), None)
 
-                if not movie:
-                    flash("Movie not found!", "error")
-                    return redirect(url_for('user_movies', user_id=user_id))
-
-                if request.method == 'POST':
-                    updated_data = {
-                        'name': request.form.get('name', '').strip() or movie.name,
-                        'director': request.form.get('director', '').strip() or movie.director,
-                        'year': int(request.form.get('year') or movie.year),
-                        'rating': float(request.form.get('rating') or movie.rating)
-                    }
-
-                    self.data_manager.update_movie(movie_id, updated_data)
-                    flash("Movie updated successfully!", "success")
-                    return redirect(url_for('user_movies', user_id=user_id))
-            except (ValueError, AttributeError) as e:
-                flash(f"Error updating movie: {str(e)}", "error")
-            except Exception as e:
-                self.app.logger.error(f"Error updating movie {movie_id}: {str(e)}")
-                flash("An unexpected error occurred. Please try again.", "error")
+            if not movie:
+                flash("Movie not found in user's collection!", "error")
                 return redirect(url_for('user_movies', user_id=user_id))
 
+            if request.method == 'POST':
+                try:
+                    # Get form data with proper type conversion and fallbacks
+                    name = request.form.get('name', '').strip()
+                    director = request.form.get('director', '').strip()
+
+                    # Handle year with proper validation
+                    year_str = request.form.get('year', '')
+                    try:
+                        year = int(year_str) if year_str else movie.year
+                    except ValueError:
+                        year = movie.year
+                        flash("Invalid year format. Using original value.", "warning")
+
+                    # Handle rating with proper validation
+                    rating_str = request.form.get('rating', '')
+                    try:
+                        rating = float(rating_str) if rating_str else movie.rating
+                    except ValueError:
+                        rating = movie.rating
+                        flash("Invalid rating format. Using original value.", "warning")
+
+                    # Create updated data dictionary
+                    updated_data = {
+                        'name': name or movie.name,
+                        'director': director or movie.director,
+                        'year': year,
+                        'rating': rating
+                    }
+
+                    # Log the update operation for debugging
+                    self.app.logger.info(f"Updating movie {movie_id} with data: {updated_data}")
+
+                    # Update the movie in the database
+                    self.data_manager.update_movie(movie_id, updated_data)
+
+                    flash("Movie updated successfully!", "success")
+                    return redirect(url_for('user_movies', user_id=user_id))
+
+                except Exception as e:
+                    self.app.logger.error(f"Error updating movie {movie_id}: {str(e)}")
+                    flash(f"Error updating movie: {str(e)}", "error")
+                    # Re-render the form with the current data
+                    return render_template('update_movie.html', user_id=user_id, movie=movie)
+
+            # GET request - show the update form
             return render_template('update_movie.html', user_id=user_id, movie=movie)
 
         @self.app.route('/users/<int:user_id>/delete_movie/<movie_id>', methods=['GET', 'POST'])
+        @handle_errors
         def delete_movie(user_id, movie_id):
-            try:
-                self.data_manager.delete_movie(movie_id)
-                flash("Movie deleted successfully!", "success")
-            except ValueError as e:
-                flash(str(e), "error")
-            except Exception as e:
-                self.app.logger.error(f"Error deleting movie {movie_id}: {str(e)}")
-                flash("An unexpected error occurred. Please try again.", "error")
-
+            self.data_manager.delete_movie(movie_id)
+            flash("Movie deleted successfully!", "success")
             return redirect(url_for('user_movies', user_id=user_id))
 
     def _fetch_movie_data(self, movie_title):
@@ -175,19 +229,23 @@ class MoviesBlueprint(BlueprintBase):
             return None
 
         try:
-            response = requests.get(f"http://www.omdbapi.com/?t={movie_title}&apikey={omdb_api_key}", timeout=5)
+            response = requests.get(
+                f"http://www.omdbapi.com/?t={movie_title}&apikey={omdb_api_key}",
+                timeout=5
+            )
             response.raise_for_status()
-
             data = response.json()
 
             if data.get('Response') != 'True':
                 flash(f"Movie not found on OMDb: {data.get('Error', 'Unknown error')}", "error")
                 return None
 
+            # Extract year (first 4 digits)
             year_str = data.get('Year', '0')
             year_match = re.search(r'^\d{4}', year_str)
             year = int(year_match.group(0)) if year_match else 0
 
+            # Parse rating
             rating_str = data.get('imdbRating', 'N/A')
             rating = float(rating_str) if rating_str != 'N/A' else 0.0
 
@@ -204,7 +262,7 @@ class MoviesBlueprint(BlueprintBase):
             flash(f"Error fetching movie details from OMDb: {str(e)}", "error")
             return None
 
-# MovieWebApp
+
 class MovieWebApp:
     def __init__(self, config=None):
         self.app = Flask(__name__)
@@ -224,11 +282,9 @@ class MovieWebApp:
             'OMDB_API_KEY': os.getenv('OMDB_API_KEY', '')
         }
 
+        self.app.config.update(default_config)
         if config:
-            default_config.update(config)
-
-        for key, value in default_config.items():
-            self.app.config[key] = value
+            self.app.config.update(config)
 
     def initialize_database(self):
         db.init_app(self.app)
@@ -238,8 +294,8 @@ class MovieWebApp:
             db.create_all()
 
     def register_blueprints(self):
-        self.users_blueprint = UsersBlueprint(self.app, self.data_manager, self.app.config['SECRET_KEY'])
-        self.movies_blueprint = MoviesBlueprint(self.app, self.data_manager, self.app.config['SECRET_KEY'])
+        self.users_blueprint = UsersBlueprint(self.app, self.data_manager)
+        self.movies_blueprint = MoviesBlueprint(self.app, self.data_manager)
         self.users_blueprint.init_app()
         self.movies_blueprint.init_app()
 
@@ -274,6 +330,7 @@ class MovieWebApp:
         if debug is None:
             debug = self.app.config.get('DEBUG', False)
         self.app.run(debug=debug, host=host, port=port)
+
 
 if __name__ == '__main__':
     movie_app = MovieWebApp()
