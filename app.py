@@ -1,3 +1,5 @@
+"""Flask application for managing users and their favorite movies."""
+
 from flask import Flask, jsonify, request, render_template, url_for, redirect, flash
 from datamanager.sqlite_data_manager import SQLiteDataManager
 from datamanager.models import db
@@ -13,7 +15,14 @@ load_dotenv()
 
 
 def handle_errors(f):
-    """Decorator to handle common exceptions in routes"""
+    """Decorator to handle common exceptions in routes.
+
+    Args:
+        f (function): The function to be decorated.
+
+    Returns:
+        function: The decorated function with error handling.
+    """
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -33,25 +42,38 @@ def handle_errors(f):
 
 
 class BlueprintBase:
-    """Base class for blueprints"""
+    """Base class for blueprints."""
 
     def __init__(self, app, data_manager):
+        """Initialize the blueprint.
+
+        Args:
+            app (Flask): The Flask application instance.
+            data_manager (SQLiteDataManager): The data manager instance.
+        """
         self.app = app
         self.data_manager = data_manager
 
     def init_app(self):
+        """Initialize the blueprint by registering routes."""
         self.register_routes()
 
 
 class UsersBlueprint(BlueprintBase):
+    """Blueprint for user-related routes."""
+
     def register_routes(self):
+        """Register user-related routes."""
+
         @self.app.route('/')
         def home():
+            """Render the home page."""
             return render_template('home.html')
 
         @self.app.route('/users')
         @handle_errors
         def users_list():
+            """Render the list of users and their movies."""
             users = self.data_manager.get_all_users()
             user_movies = {user.id: self.data_manager.get_user_movies(user.id) for user in users}
             return render_template('users_list.html', users=users, user_movies=user_movies)
@@ -59,6 +81,7 @@ class UsersBlueprint(BlueprintBase):
         @self.app.route('/add_user', methods=['GET', 'POST'])
         @handle_errors
         def add_user():
+            """Add a new user."""
             if request.method == 'POST':
                 user_data = {
                     'id': int(request.form['id']),
@@ -78,16 +101,22 @@ class UsersBlueprint(BlueprintBase):
         @self.app.route('/delete_user/<int:user_id>', methods=['GET', 'POST'])
         @handle_errors
         def delete_user(user_id):
+            """Delete a user by ID."""
             self.data_manager.delete_user(user_id)
             flash("User deleted successfully!", "success")
             return redirect(url_for('users_list'))
 
 
 class MoviesBlueprint(BlueprintBase):
+    """Blueprint for movie-related routes."""
+
     def register_routes(self):
+        """Register movie-related routes."""
+
         @self.app.route('/users/<int:user_id>')
         @handle_errors
         def user_movies(user_id):
+            """Render the list of movies for a specific user."""
             movies = self.data_manager.get_user_movies(user_id)
             user = next((u for u in self.data_manager.get_all_users() if u.id == user_id), None)
 
@@ -100,6 +129,7 @@ class MoviesBlueprint(BlueprintBase):
         @self.app.route('/users/<int:user_id>/add_movie', methods=['GET', 'POST'])
         @handle_errors
         def add_movie(user_id):
+            """Add a movie to a user's favorites."""
             if request.method == 'POST':
                 movie_title = request.form.get('title', '').strip()
 
@@ -158,6 +188,7 @@ class MoviesBlueprint(BlueprintBase):
         @self.app.route('/users/<int:user_id>/update_movie/<movie_id>', methods=['GET', 'POST'])
         @handle_errors
         def update_movie(user_id, movie_id):
+            """Update a movie in a user's favorites."""
             # Get the movie from the user's collection
             user_movies = self.data_manager.get_user_movies(user_id)
             movie = next((m for m in user_movies if str(m.id) == str(movie_id)), None)
@@ -217,11 +248,20 @@ class MoviesBlueprint(BlueprintBase):
         @self.app.route('/users/<int:user_id>/delete_movie/<movie_id>', methods=['GET', 'POST'])
         @handle_errors
         def delete_movie(user_id, movie_id):
+            """Delete a movie from a user's favorites."""
             self.data_manager.delete_movie(movie_id)
             flash("Movie deleted successfully!", "success")
             return redirect(url_for('user_movies', user_id=user_id))
 
     def _fetch_movie_data(self, movie_title):
+        """Fetch movie data from OMDb API.
+
+        Args:
+            movie_title (str): The title of the movie to fetch.
+
+        Returns:
+            dict: The movie data or None if not found.
+        """
         omdb_api_key = self.app.config.get('OMDB_API_KEY')
 
         if not omdb_api_key:
@@ -264,7 +304,14 @@ class MoviesBlueprint(BlueprintBase):
 
 
 class MovieWebApp:
+    """Main application class for the movie web app."""
+
     def __init__(self, config=None):
+        """Initialize the application.
+
+        Args:
+            config (dict, optional): Configuration dictionary. Defaults to None.
+        """
         self.app = Flask(__name__)
         self.configure_app(config)
         self.initialize_database()
@@ -273,6 +320,11 @@ class MovieWebApp:
         self.register_error_handlers()
 
     def configure_app(self, config=None):
+        """Configure the Flask application.
+
+        Args:
+            config (dict, optional): Configuration dictionary. Defaults to None.
+        """
         db_path = os.path.join(os.path.dirname(__file__), 'data', 'moviweb.db')
         default_config = {
             'SQLALCHEMY_DATABASE_URI': f"sqlite:///{db_path}",
@@ -287,6 +339,7 @@ class MovieWebApp:
             self.app.config.update(config)
 
     def initialize_database(self):
+        """Initialize the database."""
         db.init_app(self.app)
         self.data_manager = SQLiteDataManager(self.app, self.app.config['SQLALCHEMY_DATABASE_URI'])
         self.app.data_manager = self.data_manager
@@ -294,12 +347,14 @@ class MovieWebApp:
             db.create_all()
 
     def register_blueprints(self):
+        """Register blueprints."""
         self.users_blueprint = UsersBlueprint(self.app, self.data_manager)
         self.movies_blueprint = MoviesBlueprint(self.app, self.data_manager)
         self.users_blueprint.init_app()
         self.movies_blueprint.init_app()
 
     def setup_logging(self):
+        """Set up logging for the application."""
         if not self.app.debug:
             handler = logging.FileHandler('app.log')
             handler.setLevel(logging.INFO)
@@ -309,24 +364,37 @@ class MovieWebApp:
             self.app.logger.setLevel(logging.INFO)
 
     def register_error_handlers(self):
+        """Register error handlers."""
+
         @self.app.errorhandler(404)
         def page_not_found(e):
+            """Handle 404 errors."""
             return render_template('404.html'), 404
 
         @self.app.errorhandler(500)
         def internal_server_error(e):
+            """Handle 500 errors."""
             self.app.logger.error(f"Internal server error: {str(e)}")
             return render_template('500.html'), 500
 
         @self.app.errorhandler(403)
         def forbidden(e):
+            """Handle 403 errors."""
             return render_template('403.html', error=str(e)), 403
 
         @self.app.errorhandler(401)
         def unauthorized(e):
+            """Handle 401 errors."""
             return render_template('401.html', error=str(e)), 401
 
     def run(self, host='0.0.0.0', port=5002, debug=None):
+        """Run the application.
+
+        Args:
+            host (str, optional): The host to run the app on. Defaults to '0.0.0.0'.
+            port (int, optional): The port to run the app on. Defaults to 5002.
+            debug (bool, optional): Whether to run in debug mode. Defaults to None.
+        """
         if debug is None:
             debug = self.app.config.get('DEBUG', False)
         self.app.run(debug=debug, host=host, port=port)
