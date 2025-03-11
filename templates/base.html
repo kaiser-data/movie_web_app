@@ -7,17 +7,20 @@
     <meta name="theme-color" content="#3b82f6">
     <title>{% block title %}MovieWeb App{% endblock %}</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M2 3.993A1 1 0 0 1 2.992 3h18.016c.548 0 .992.445.992.993v16.014a1 1 0 0 1-.992.993H2.992A.993.993 0 0 1 2 20.007V3.993ZM4 5v14h16V5H4Zm6 2h8v2h-8V7Zm0 4h8v2h-8v-2Zm0 4h8v2h-8v-2Zm-4-8h2v2H6V7Zm0 4h2v2H6v-2Zm0 4h2v2H6v-2Z'/></svg>">
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M2 3.993A1 1 0 0 1 2.992 3h18.016c.548 0 .992.445.992.993v16.014a1 1 0 0 1-.992.993H2.992A.993.993 0 0 1 2 20.007V3.993ZM4 5v14h16V5H4Zm6 2h8v2h-8V7Zm0 4h8v2h-8v-2Zm0 4h8v2h-8v-2Zm-4-8h2v2H6V7Zm0 4h2v2H6v-2Zm0 4h2v2H6v-2Z'/></svg>">
 
+    <!-- CSS Variables & Base Styles -->
     <style>
         :root {
             /* Colors */
             --primary: #3b82f6;
             --primary-dark: #2563eb;
-            --primary-light: #60a5fa;
             --gray-50: #f9fafb;
             --gray-200: #e5e7eb;
             --gray-600: #4b5563;
@@ -30,20 +33,14 @@
             /* Typography & Spacing */
             --font: 'Plus Jakarta Sans', system-ui, sans-serif;
             --container: 1200px;
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             --radius: 0.375rem;
             --transition: all 0.2s ease;
         }
 
         /* Reset & Base */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        html {
-            height: 100%;
-            font-size: 16px;
-            scroll-behavior: smooth;
-        }
-
+        html { height: 100%; font-size: 16px; scroll-behavior: smooth; }
         body {
             font-family: var(--font);
             background-color: var(--gray-50);
@@ -56,8 +53,8 @@
         }
 
         /* Header */
-        .header {
-            background-color: white;
+        header {
+            background: white;
             box-shadow: var(--shadow);
             position: sticky;
             top: 0;
@@ -89,13 +86,8 @@
         .logo:hover { color: var(--primary-dark); }
         .logo svg { width: 1.5rem; height: 1.5rem; }
 
-        .nav-links {
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-        }
-
-        .nav-link {
+        nav { display: flex; gap: 1.5rem; align-items: center; }
+        nav a {
             color: var(--gray-600);
             text-decoration: none;
             font-weight: 500;
@@ -105,9 +97,11 @@
             transition: var(--transition);
         }
 
-        .nav-link:hover, .nav-link.active { color: var(--primary); }
+        nav a:hover, nav a.active {
+            color: var(--primary);
+        }
 
-        .nav-link::after {
+        nav a::after {
             content: '';
             position: absolute;
             bottom: 0;
@@ -118,14 +112,7 @@
             transition: var(--transition);
         }
 
-        .nav-link:hover::after, .nav-link.active::after { width: 100%; }
-
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
+        nav a:hover::after, nav a.active::after { width: 100%; }
 
         /* Main Content */
         main {
@@ -197,7 +184,8 @@
     </style>
 </head>
 <body>
-    <header class="header">
+    <!-- Header Section -->
+    <header>
         <div class="nav-container">
             <a href="/" class="logo">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
@@ -206,21 +194,26 @@
                 MovieWeb
             </a>
             <nav>
-                <div class="nav-links">
-                    <a href="/" class="nav-link active">Home</a>
-                    <a href="/movies" class="nav-link">Movies</a>
-                    <a href="/about" class="nav-link">About</a>
-                </div>
+                <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+                <a href="/movies" class="{% if request.path.startswith('/movies') %}active{% endif %}">Movies</a>
+                <a href="/users" class="{% if request.path == '/users' %}active{% endif %}">Users</a>
+                <a href="/add_user" class="{% if request.path == '/add_user' %}active{% endif %}">Add User</a>
+                <a href="/about" class="{% if request.path == '/about' %}active{% endif %}">About</a>
             </nav>
         </div>
     </header>
 
+    <!-- Flash Messages -->
     {% if messages %}
     <div class="flash-container">
         {% for message in messages %}
         <div class="flash flash-{{ message.tags }}">
             <span class="flash-icon">
-                {% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}!{% elif message.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+                {% if message.tags == 'success' %}✓
+                {% elif message.tags == 'error' %}!
+                {% elif message.tags == 'warning' %}⚠️
+                {% else %}ℹ️
+                {% endif %}
             </span>
             <div class="flash-message">{{ message }}</div>
             <button class="flash-close" onclick="this.parentElement.remove()">×</button>
@@ -229,6 +222,7 @@
     </div>
     {% endif %}
 
+    <!-- Main Content -->
     <main>
         {% block content %}{% endblock %}
     </main>
