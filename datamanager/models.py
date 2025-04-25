@@ -1,8 +1,16 @@
+# datamanager/models.py
+
 from flask_sqlalchemy import SQLAlchemy
 
 # Initialize the SQLAlchemy object
 db = SQLAlchemy()
 
+# Secondary table for many-to-many relationship between users and movies
+user_movie = db.Table(
+    'user_movie',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('movie_id', db.String(50), db.ForeignKey('movies.id'), primary_key=True)  # ID is String
+)
 
 class User(db.Model):
     """
@@ -17,7 +25,7 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    favorite_movies = db.relationship('Movie', secondary='user_movie', backref='users', lazy=True)
+    favorite_movies = db.relationship('Movie', secondary=user_movie, backref='users', lazy=True)
 
 
 class Movie(db.Model):
@@ -33,17 +41,9 @@ class Movie(db.Model):
         poster (str): The URL to the movie poster image.
     """
     __tablename__ = 'movies'
-    id = db.Column(db.String(50), primary_key=True)  # Change id to String for external IDs
+    id = db.Column(db.String(50), primary_key=True)  # ID is string for OMDb integration
     name = db.Column(db.String(200), nullable=False)
     director = db.Column(db.String(100), nullable=False)
     year = db.Column(db.Integer, nullable=False)
     rating = db.Column(db.Float, nullable=False)
-    poster = db.Column(db.String(255))  # Add this line for the poster URL
-
-
-# Secondary table for many-to-many relationship between users and movies
-user_movie = db.Table(
-    'user_movie',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('movie_id', db.String(50), db.ForeignKey('movies.id'), primary_key=True)  # Update movie_id to String
-)
+    poster = db.Column(db.String(255))  # Optional poster URL

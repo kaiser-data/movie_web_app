@@ -3,16 +3,23 @@
 {% block title %}Update Movie{% endblock %}
 
 {% block content %}
-<h1>Update Movie Details</h1>
-<form method="POST" action="{{ url_for('update_movie', user_id=user_id, movie_id=movie_id) }}">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name"><br><br>
+<h2>Update Movie</h2>
+
+<form method="post">
+    <label for="name">Movie Name:</label>
+    <input type="text" name="name" value="{{ movie.name }}" required><br><br>
+
     <label for="director">Director:</label>
-    <input type="text" id="director" name="director"><br><br>
+    <input type="text" name="director" value="{{ movie.director }}" required><br><br>
+
     <label for="year">Year:</label>
-    <input type="number" id="year" name="year"><br><br>
+    <input type="number" name="year" value="{{ movie.year }}" required><br><br>
+
     <label for="rating">Rating:</label>
-    <input type="number" step="0.1" id="rating" name="rating"><br><br>
-    <button type="submit">Update Movie</button>
+    <input type="number" step="0.1" name="rating" value="{{ movie.rating }}" required><br><br>
+
+    <input type="submit" value="Update Movie">
 </form>
+
+<p><a href="{{ url_for('user_movies', user_id=user_id) }}">← Back to Movies</a></p>
 {% endblock %}
