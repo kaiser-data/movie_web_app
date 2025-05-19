@@ -1,6 +1,4 @@
-\============================================================
-🎬  MovieWeb App – Masterschool Capstone Project
-================================================
+# 🎬  MovieWeb App – Masterschool Capstone Project #
 
 Welcome to **MovieWeb**, a full‑stack Flask application built as part of my
 **Masterschool** software‑engineering program.  The goal is simple: give every
