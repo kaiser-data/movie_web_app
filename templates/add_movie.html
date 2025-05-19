@@ -1,25 +1,25 @@
 {% extends "base.html" %}
-
-{% block title %}Add Movie{% endblock %}
-
+{% block title %}Add Movie - MovieWeb App{% endblock %}
 {% block content %}
-<h1>Add a New Movie</h1>
-<form method="POST" action="{{ url_for('add_movie', user_id=user_id) }}">
-    <label for="title">Movie Title:</label>
-    <input type="text" id="title" name="title" required><br><br>
+<div class="container mx-auto px-4 py-6">
+    <h2 class="text-2xl font-bold mb-4">🎬 Add a New Movie</h2>
 
-    <label for="name">Name (optional):</label>
-    <input type="text" id="name" name="name"><br><br>
+    <form method="POST" class="bg-white shadow-md rounded-lg p-6 max-w-md mx-auto">
+        <div class="mb-4">
+            <label for="title" class="block text-sm font-medium text-gray-700">Movie Title:</label>
+            <input type="text" id="title" name="title" required
+                   class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="e.g. Inception">
+        </div>
 
-    <label for="director">Director (optional):</label>
-    <input type="text" id="director" name="director"><br><br>
+        <button type="submit"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200">
+            Search & Add Movie
+        </button>
+    </form>
 
-    <label for="year">Year (optional):</label>
-    <input type="number" id="year" name="year"><br><br>
-
-    <label for="rating">Rating (optional):</label>
-    <input type="number" step="0.1" id="rating" name="rating"><br><br>
-
-    <button type="submit">Add Movie</button>
-</form>
+    <div class="mt-6 text-center">
+        <a href="{{ url_for('user_movies', user_id=user.id) }}" class="text-blue-500 hover:underline">← Back to Movies</a>
+    </div>
+</div>
 {% endblock %}

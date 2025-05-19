@@ -1,44 +1,10 @@
+<!-- templates/home.html -->
 {% extends "base.html" %}
-
 {% block title %}Home - MovieWeb App{% endblock %}
-
 {% block content %}
 <section class="hero">
-    <div class="hero-content">
-        <h1 class="hero-title">Welcome to MovieWeb App</h1>
-        <p class="hero-description">
-            Your one-stop platform to manage users and their favorite movies effortlessly.
-        </p>
-        <div class="hero-actions">
-            <a href="/movies" class="btn btn-primary">Explore Movies</a>
-            <a href="/add_user" class="btn btn-secondary">Add New User</a>
-        </div>
-    </div>
-</section>
-
-<section class="features">
-    <div class="container">
-        <h2 class="section-title">Why Choose MovieWeb?</h2>
-        <div class="feature-grid">
-            <div class="feature-item">
-                <h3 class="feature-title">User-Friendly Interface</h3>
-                <p class="feature-description">
-                    Intuitive design for seamless navigation and management.
-                </p>
-            </div>
-            <div class="feature-item">
-                <h3 class="feature-title">Comprehensive Movie Database</h3>
-                <p class="feature-description">
-                    Access and organize your favorite movies with ease.
-                </p>
-            </div>
-            <div class="feature-item">
-                <h3 class="feature-title">Effortless User Management</h3>
-                <p class="feature-description">
-                    Add, edit, and manage users with just a few clicks.
-                </p>
-            </div>
-        </div>
-    </div>
+    <h2>Welcome to MovieWeb!</h2>
+    <p>Your one-stop place to manage your favorite movies.</p>
+    <a href="{{ url_for('list_users') }}" class="btn">Browse Users</a>
 </section>
 {% endblock %}

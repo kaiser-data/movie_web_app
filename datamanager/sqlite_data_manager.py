@@ -1,3 +1,5 @@
+# datamanager/sqlite_data_manager.py
+
 from .data_manager_interface import DataManagerInterface
 from .models import db, User, Movie
 
@@ -5,20 +7,21 @@ from .models import db, User, Movie
 class SQLiteDataManager(DataManagerInterface):
     """
     A class that implements the DataManagerInterface using SQLite as the database backend.
+    Handles user and movie data using SQLAlchemy ORM with proper error handling.
     """
 
     def __init__(self, app, db_uri):
         """
         Initialize the SQLiteDataManager with a Flask app and database URI.
-        Configures the SQLAlchemy database connection.
 
         Args:
             app (Flask): The Flask application instance.
             db_uri (str): The database URI for SQLite.
         """
-        # Initialize the Flask app and configure the database connection
         self.app = app
         self.db_uri = db_uri
+
+        # Configure the Flask app with the correct database settings
         app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -32,6 +35,19 @@ class SQLiteDataManager(DataManagerInterface):
         with self.app.app_context():
             return db.session.query(User).all()
 
+    def get_user(self, user_id):
+        """
+        Retrieve a user by their ID.
+
+        Args:
+            user_id (int): The ID of the user to retrieve.
+
+        Returns:
+            User: The user object if found, otherwise None.
+        """
+        with self.app.app_context():
+            return User.query.get(user_id)
+
     def get_user_movies(self, user_id):
         """
         Retrieve all movies associated with a specific user.
@@ -42,7 +58,6 @@ class SQLiteDataManager(DataManagerInterface):
         Returns:
             list: A list of Movie objects associated with the user.
         """
-        # Fetch the user and their favorite movies
         with self.app.app_context():
             user = db.session.query(User).get(user_id)
             if user:
@@ -60,11 +75,11 @@ class SQLiteDataManager(DataManagerInterface):
             ValueError: If user data is invalid or missing.
         """
         with self.app.app_context():
-            new_user = User(
+            user = User(
                 id=user_data.get('id'),
                 name=user_data.get('name')
             )
-            db.session.add(new_user)
+            db.session.add(user)
             db.session.commit()
 
     def add_movie(self, movie_data):
@@ -78,15 +93,15 @@ class SQLiteDataManager(DataManagerInterface):
             ValueError: If movie data is invalid or missing.
         """
         with self.app.app_context():
-            new_movie = Movie(
-                id=movie_data.get('id'),  # Accept string ID
+            movie = Movie(
+                id=movie_data.get('id'),  # Accepts string IDs like 'tt0133093' (OMDb format)
                 name=movie_data.get('name'),
                 director=movie_data.get('director'),
                 year=movie_data.get('year'),
                 rating=movie_data.get('rating'),
-                poster=movie_data.get('poster', '')  # Add this line for the poster URL
+                poster=movie_data.get('poster')  # Optional field
             )
-            db.session.add(new_movie)
+            db.session.add(movie)
             db.session.commit()
 
     def update_movie(self, movie_id, updated_data):
@@ -94,20 +109,22 @@ class SQLiteDataManager(DataManagerInterface):
         Update an existing movie in the database.
 
         Args:
-            movie_id (int): The ID of the movie to update.
+            movie_id (str): The ID of the movie to update.
             updated_data (dict): A dictionary containing updated movie data.
 
         Raises:
             ValueError: If the movie does not exist.
         """
         with self.app.app_context():
-            movie = db.session.query(Movie).get(movie_id)
+            movie = db.session.query(Movie).filter_by(id=str(movie_id)).first()
             if movie:
+                # Update fields only if provided
                 movie.name = updated_data.get('name', movie.name)
                 movie.director = updated_data.get('director', movie.director)
                 movie.year = updated_data.get('year', movie.year)
                 movie.rating = updated_data.get('rating', movie.rating)
                 movie.poster = updated_data.get('poster', movie.poster)
+
                 db.session.commit()
             else:
                 raise ValueError(f"Movie with ID {movie_id} does not exist.")
@@ -117,13 +134,13 @@ class SQLiteDataManager(DataManagerInterface):
         Delete a movie from the database.
 
         Args:
-            movie_id (int): The ID of the movie to delete.
+            movie_id (str): The ID of the movie to delete.
 
         Raises:
             ValueError: If the movie does not exist.
         """
         with self.app.app_context():
-            movie = db.session.query(Movie).get(movie_id)
+            movie = db.session.query(Movie).filter_by(id=str(movie_id)).first()
             if movie:
                 db.session.delete(movie)
                 db.session.commit()
@@ -141,7 +158,7 @@ class SQLiteDataManager(DataManagerInterface):
             Movie: The movie object if found, otherwise None.
         """
         with self.app.app_context():
-            return Movie.query.filter_by(id=movie_id).first()
+            return db.session.query(Movie).filter_by(id=str(movie_id)).first()
 
     def delete_user(self, user_id):
         """
@@ -186,20 +203,18 @@ class SQLiteDataManager(DataManagerInterface):
 
         Args:
             user_id (int): The ID of the user.
-            movie_id (int): The ID of the movie.
+            movie_id (str): The ID of the movie (string format for OMDb compatibility).
 
         Raises:
             ValueError: If the user or movie does not exist.
         """
         with self.app.app_context():
             user = db.session.query(User).get(user_id)
-            movie = db.session.query(Movie).get(movie_id)
+            movie = db.session.query(Movie).filter_by(id=str(movie_id)).first()
+
             if user and movie:
                 if movie not in user.favorite_movies:
                     user.favorite_movies.append(movie)
                     db.session.commit()
-                    print(f"Added movie {movie.name} to user {user.name}'s favorites.")
-                else:
-                    print(f"Movie {movie.name} is already in user {user.name}'s favorites.")
             else:
-                raise ValueError(f"User or Movie not found.")
+                raise ValueError("User or Movie not found.")

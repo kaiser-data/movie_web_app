@@ -1,25 +1,27 @@
+<!-- templates/update_movie.html -->
 {% extends "base.html" %}
-
 {% block title %}Update Movie{% endblock %}
-
 {% block content %}
-<h2>Update Movie</h2>
+<div class="form-container">
+    <h2>Update Movie</h2>
+    <form method="POST">
+        <label for="name">Movie Name:</label>
+        <input type="text" id="name" name="name" value="{{ movie.name }}" required><br>
 
-<form method="post">
-    <label for="name">Movie Name:</label>
-    <input type="text" name="name" value="{{ movie.name }}" required><br><br>
+        <label for="director">Director:</label>
+        <input type="text" id="director" name="director" value="{{ movie.director }}" required><br>
 
-    <label for="director">Director:</label>
-    <input type="text" name="director" value="{{ movie.director }}" required><br><br>
+        <label for="year">Year:</label>
+        <input type="number" id="year" name="year" value="{{ movie.year }}" required><br>
 
-    <label for="year">Year:</label>
-    <input type="number" name="year" value="{{ movie.year }}" required><br><br>
+        <label for="rating">Rating:</label>
+        <input type="number" step="0.1" id="rating" name="rating" value="{{ movie.rating }}" required><br>
 
-    <label for="rating">Rating:</label>
-    <input type="number" step="0.1" name="rating" value="{{ movie.rating }}" required><br><br>
+        <label for="poster">Poster URL:</label>
+        <input type="url" id="poster" name="poster" value="{{ movie.poster }}"><br>
 
-    <input type="submit" value="Update Movie">
-</form>
-
-<p><a href="{{ url_for('user_movies', user_id=user_id) }}">← Back to Movies</a></p>
+        <button type="submit" class="btn">Update Movie</button>
+    </form>
+    <p><a href="{{ url_for('user_movies', user_id=user_id) }}" class="back-link">← Back to Movies</a></p>
+</div>
 {% endblock %}

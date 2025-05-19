@@ -2,6 +2,10 @@
 __pycache__/
 .env
 data/
+
 venv/
 .venv/
+
+.db
+.sqlite
 
