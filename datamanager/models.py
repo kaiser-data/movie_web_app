@@ -1,60 +1,103 @@
-# datamanager/models.py
+"""SQLAlchemy ORM models for the MovieWeb application.
+
+This module defines two domain entities, **User** and **Movie**, plus the
+association table that models a many‑to‑many relationship between them.  It is
+intentionally thin – no business logic or helper methods – keeping the ORM
+layer focused on persistence only.  All higher‑level operations live in the
+Data‑Manager classes.
+"""
+
+from __future__ import annotations
 
 from flask_sqlalchemy import SQLAlchemy
 
-# Initialize the SQLAlchemy object
+# ---------------------------------------------------------------------------
+# SQLAlchemy initialisation (bound later inside app.py)
+# ---------------------------------------------------------------------------
+
 db = SQLAlchemy()
 
-# Secondary table for many-to-many relationship between users and movies
+# ---------------------------------------------------------------------------
+# Association table – maps users <-> movies (watch‑list entries)
+# ---------------------------------------------------------------------------
+
 user_movie = db.Table(
-    'user_movie',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('movie_id', db.String(50), db.ForeignKey('movies.id'), primary_key=True)
+    "user_movie",
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
+    db.Column("movie_id", db.String(50), db.ForeignKey("movies.id"), primary_key=True),
 )
 
+# ---------------------------------------------------------------------------
+# User entity
+# ---------------------------------------------------------------------------
 
 class User(db.Model):
+    """Application user (profile).
+
+    Attributes
+    ----------
+    id : int
+        Primary key, auto‑increment integer.
+    name : str
+        Display name (unique constraint handled at app layer).
+    favorite_movies : list[Movie]
+        Relationship populated via *user_movie* association table.
     """
-    Represents a user in the database.
 
-    Attributes:
-        id (int): The unique identifier for the user (primary key).
-        name (str): The name of the user (cannot be null).
-        favorite_movies (relationship): A many-to-many relationship with the Movie model,
-            representing the user's favorite movies.
-    """
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    favorite_movies = db.relationship('Movie', secondary=user_movie, backref='users', lazy=True)
+    id: int = db.Column(db.Integer, primary_key=True)
+    name: str = db.Column(db.String(100), nullable=False)
 
-    def __repr__(self):
-        return f"<User(id={self.id}, name='{self.name}')>"
+    # Use default "select" loading so objects remain tied to session
+    favorite_movies = db.relationship("Movie", secondary=user_movie, backref="users")
 
+    # ------------------------------------------------------------------
+    # Magic / dunder helpers
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+        return f"<User id={self.id} name='{self.name}'>"
+
+
+# ---------------------------------------------------------------------------
+# Movie entity
+# ---------------------------------------------------------------------------
 
 class Movie(db.Model):
+    """Movie metadata fetched from OMDb.
+
+    Attributes
+    ----------
+    id : str
+        IMDb ID (e.g. ``tt0133093``) – chosen as primary key.
+    name : str
+        Official title.
+    director : str
+        Director(s) (comma‑separated if multiple).
+    year : int
+        Release year.
+    rating : float
+        IMDb rating (0‑10 scale).
+    genre : str | None
+        Comma‑separated genre list (may be ``None`` if OMDb lacks data).
+    poster : str | None
+        URL to the poster artwork.
     """
-    Represents a movie in the database.
 
-    Attributes:
-        id (str): The unique identifier for the movie (primary key). Typically an external ID like IMDb ID.
-        name (str): The name of the movie (cannot be null).
-        director (str): The name of the director of the movie (cannot be null).
-        year (int): The release year of the movie (cannot be null).
-        rating (float): The rating of the movie (cannot be null).
-        genre (str): The genre(s) of the movie (optional).
-        poster (str): The URL to the movie poster image (optional).
-    """
-    __tablename__ = 'movies'
+    __tablename__ = "movies"
 
-    id = db.Column(db.String(50), primary_key=True)  # String-based for OMDb compatibility
-    name = db.Column(db.String(200), nullable=False)
-    director = db.Column(db.String(100), nullable=False)
-    year = db.Column(db.Integer, nullable=False)
-    rating = db.Column(db.Float, nullable=False)
-    genre = db.Column(db.String(100), nullable=True)  # Optional genre(s)
-    poster = db.Column(db.String(255))  # Optional poster URL
+    id: str = db.Column(db.String(50), primary_key=True)  # OMDb compatibility
+    name: str = db.Column(db.String(200), nullable=False)
+    director: str = db.Column(db.String(100), nullable=False)
+    year: int = db.Column(db.Integer, nullable=False)
+    rating: float = db.Column(db.Float, nullable=False)
+    genre: str | None = db.Column(db.String(100))
+    poster: str | None = db.Column(db.String(255))
 
-    def __repr__(self):
-        return f"<Movie(id='{self.id}', name='{self.name}', year={self.year}, genre='{self.genre}')>"
+    def __repr__(self) -> str:  # pragma: no cover
+        return (
+            "<Movie id='{}' name='{}' year={} rating={}>".format(
+                self.id, self.name, self.year, self.rating
+            )
+        )

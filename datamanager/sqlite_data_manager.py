@@ -104,7 +104,7 @@ class SQLiteDataManager(DataManagerInterface):
     def add_movie(self, movie_data: dict) -> bool:
         """Insert a new movie row; return **True** if created, **False** if duplicate."""
         if db.session.get(Movie, str(movie_data["id"])):
-            return False  # Existing row – nothing to do
+            return False  #
 
         movie = Movie(
             id=movie_data["id"],

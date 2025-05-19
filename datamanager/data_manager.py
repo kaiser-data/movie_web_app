@@ -1,96 +1,125 @@
+"""In‑memory implementation of :class:`DataManagerInterface`.
+
+This class is **only** for quick unit tests or interactive sessions where you
+want a data layer without touching SQLite/SQLAlchemy.  It is *not* used by the
+running Flask app (which relies on :class:`SQLiteDataManager`).
+
+The implementation is intentionally simple: two dictionaries backed by Python
+lists.  Each method mimics the behaviour (and raises the same errors) as the
+real data manager so that higher‑level code can swap the two without changes.
+"""
+
+from __future__ import annotations
+
 from data_manager_interface import DataManagerInterface
 
 
 class InMemoryDataManager(DataManagerInterface):
-    def __init__(self):
-        # Initialize in-memory storage
-        self.users = {}  # Dictionary to store users (key: user_id, value: user_data)
-        self.movies = {}  # Dictionary to store movies (key: movie_id, value: movie_data)
+    """Store *users* and *movies* in plain Python dicts.
 
-    def get_all_users(self):
-        """Retrieve all users."""
+    ------------------------------------------------------------------
+    Internal structures
+    ------------------------------------------------------------------
+    ``self.users``
+        ``{user_id: {"id": int, "name": str, "favorite_movies": list[int]}}``
+    ``self.movies``
+        ``{movie_id: {"id": int/str, "name": str, ...}}``
+    """
+
+    # ------------------------------------------------------------------
+    # Construction helpers
+    # ------------------------------------------------------------------
+
+    def __init__(self) -> None:
+        # In‑memory stores (never persisted to disk)
+        self.users: dict[int, dict] = {}
+        self.movies: dict[str | int, dict] = {}
+
+    # ------------------------------------------------------------------
+    # Read helpers
+    # ------------------------------------------------------------------
+
+    def get_all_users(self) -> list[dict]:
+        """Return *all* user dicts (shallow copies)."""
         return list(self.users.values())
 
-    def get_user_movies(self, user_id):
-        """Retrieve all movies associated with a specific user."""
+    def get_user_movies(self, user_id: int) -> list[dict]:
+        """Return every movie favourited by *user_id* (may be empty)."""
         user = self.users.get(user_id)
-        if user:
-            return [self.movies[movie_id] for movie_id in user['favorite_movies'] if movie_id in self.movies]
-        return []
+        if not user:
+            return []
+        return [self.movies[mid] for mid in user["favorite_movies"] if mid in self.movies]
 
-    def add_user(self, user_data):
-        """Add a new user."""
-        user_id = user_data.get('id')
-        if user_id not in self.users:
-            self.users[user_id] = user_data
-        else:
+    # ------------------------------------------------------------------
+    # Insert helpers
+    # ------------------------------------------------------------------
+
+    def add_user(self, user_data: dict) -> None:
+        """Insert a new user; raise if the primary key already exists."""
+        user_id = user_data.get("id")
+        if user_id in self.users:
             raise ValueError(f"User with ID {user_id} already exists.")
+        # Ensure the favorites list exists even if caller forgets
+        user_data.setdefault("favorite_movies", [])
+        self.users[user_id] = user_data
 
-    def add_movie(self, movie_data):
-        """Add a new movie."""
-        movie_id = movie_data.get('id')
-        if movie_id not in self.movies:
-            self.movies[movie_id] = movie_data
-        else:
+    def add_movie(self, movie_data: dict) -> None:
+        """Insert a new movie; raise if the primary key already exists."""
+        movie_id = movie_data.get("id")
+        if movie_id in self.movies:
             raise ValueError(f"Movie with ID {movie_id} already exists.")
+        self.movies[movie_id] = movie_data
 
-    def update_user(self, user_id, updated_data):
-        """Update an existing user."""
-        if user_id in self.users:
-            self.users[user_id].update(updated_data)
-        else:
+    # ------------------------------------------------------------------
+    # Update helpers
+    # ------------------------------------------------------------------
+
+    def update_user(self, user_id: int, updated_data: dict) -> None:
+        if user_id not in self.users:
             raise ValueError(f"User with ID {user_id} does not exist.")
+        self.users[user_id].update(updated_data)
 
-    def update_movie(self, movie_id, updated_data):
-        """Update an existing movie."""
-        if movie_id in self.movies:
-            self.movies[movie_id].update(updated_data)
-        else:
+    def update_movie(self, movie_id: str | int, updated_data: dict) -> None:
+        if movie_id not in self.movies:
             raise ValueError(f"Movie with ID {movie_id} does not exist.")
+        self.movies[movie_id].update(updated_data)
 
-    def delete_user(self, user_id):
-        """Delete a user."""
-        if user_id in self.users:
-            del self.users[user_id]
-        else:
+    # ------------------------------------------------------------------
+    # Delete helpers
+    # ------------------------------------------------------------------
+
+    def delete_user(self, user_id: int) -> None:
+        if user_id not in self.users:
             raise ValueError(f"User with ID {user_id} does not exist.")
+        del self.users[user_id]
 
-    def delete_movie(self, movie_id):
-        """Delete a movie."""
-        if movie_id in self.movies:
-            del self.movies[movie_id]
-        else:
+    def delete_movie(self, movie_id: str | int) -> None:
+        if movie_id not in self.movies:
             raise ValueError(f"Movie with ID {movie_id} does not exist.")
+        del self.movies[movie_id]
 
+
+# ----------------------------------------------------------------------
+# Demonstration block: ``python -m datamanager.in_memory_data_manager``
+# ----------------------------------------------------------------------
 
 if __name__ == "__main__":
-    # Initialize the DataManager
-    data_manager = InMemoryDataManager()
+    manager = InMemoryDataManager()
 
-    # Add users
-    data_manager.add_user({'id': 1, 'name': 'Alice', 'favorite_movies': []})
-    data_manager.add_user({'id': 2, 'name': 'Bob', 'favorite_movies': []})
+    # 1) Seed demo data -------------------------------------------------
+    manager.add_user({"id": 1, "name": "Alice"})
+    manager.add_user({"id": 2, "name": "Bob"})
 
-    # Add movies
-    data_manager.add_movie(
-        {'id': 101, 'name': 'Inception', 'director': 'Christopher Nolan', 'year': 2010, 'rating': 8.7})
-    data_manager.add_movie(
-        {'id': 102, 'name': 'Interstellar', 'director': 'Christopher Nolan', 'year': 2014, 'rating': 8.6})
+    manager.add_movie({"id": 101, "name": "Inception", "director": "Christopher Nolan", "year": 2010, "rating": 8.7})
+    manager.add_movie({"id": 102, "name": "Interstellar", "director": "Christopher Nolan", "year": 2014, "rating": 8.6})
 
-    # Get all users
-    all_users = data_manager.get_all_users()
-    print("All Users:", all_users)
+    # 2) Link favourite --------------------------------------------------
+    manager.users[1]["favorite_movies"].append(101)
 
-    # Add favorite movie for Alice
-    alice = data_manager.get_all_users()[0]
-    alice['favorite_movies'].append(101)
-    data_manager.update_user(1, alice)
+    # 3) Show output -----------------------------------------------------
+    print("All Users:", manager.get_all_users())
+    print("Alice's Movies:", manager.get_user_movies(1))
 
-    # Get Alice's favorite movies
-    alice_movies = data_manager.get_user_movies(1)
-    print("Alice's Favorite Movies:", alice_movies)
-
-    # Delete a movie
-    data_manager.delete_movie(101)
-    alice_movies_after_deletion = data_manager.get_user_movies(1)
-    print("Alice's Favorite Movies After Deletion:", alice_movies_after_deletion)
+    # 4) Delete & verify -------------------------------------------------
+    manager.delete_movie(101)
+    print("After deletion:", manager.get_user_movies(1))

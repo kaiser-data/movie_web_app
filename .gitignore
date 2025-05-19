@@ -1,11 +1,46 @@
+# ----------------------------------------
+# IDE / editor settings
+# ----------------------------------------
 .idea/
-__pycache__/
-.env
-data/
+.vscode/
+*.sublime-*
 
+# ----------------------------------------
+# Python byte-code & caches
+# ----------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ----------------------------------------
+# Virtual-envs
+# ----------------------------------------
 venv/
 .venv/
 
-.db
-.sqlite
+# ----------------------------------------
+# Environment & secret files
+# ----------------------------------------
+.env            # dotenv file with secrets
+.env.*          # e.g. .env.dev, .env.prod
 
+# ----------------------------------------
+# Databases & data dumps
+# ----------------------------------------
+*.sqlite
+*.db
+data/           # your SQLite file lives in here
+instance/       # Flask instance folder (if you use one)
+
+# ----------------------------------------
+# Logs & runtime artifacts
+# ----------------------------------------
+*.log
+*.pid
+
+# ----------------------------------------
+# OS junk
+# ----------------------------------------
+.DS_Store
+Thumbs.db
