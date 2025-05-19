@@ -104,13 +104,6 @@ movieweb/
 
 ---
 
-## 🧑‍💻 Contributing
-
-1. Fork → feature branch → PR
-2. Follow [PEP 8](https://peps.python.org/pep-0008/) & conventional-commit messages
-3. Run `black .` before pushing
-
----
 
 ## 📜 License
 
