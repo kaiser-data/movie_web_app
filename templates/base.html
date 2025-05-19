@@ -3,27 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MovieWeb App - Manage your favorite movies">
+    <meta name="description" content="MovieWeb App – Manage your favourite movies">
     <title>{% block title %}MovieWeb App{% endblock %}</title>
 
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com "></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Optional: Custom Styles -->
+    <!-- Optional: Custom Stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body class="bg-gray-100 text-gray-900 font-sans min-h-screen flex flex-col">
 
-<!-- Navigation Bar -->
-<header class="bg-blue-600 text-white shadow-md">
-    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-        <a href="{{ url_for('home') }}" class="text-xl font-bold flex items-center gap-2 hover:text-blue-200 transition">
+<!-- Navigation / App Bar -->
+<header class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+        <a href="{{ url_for('home') }}" class="text-2xl font-bold flex items-center gap-2 hover:text-yellow-300 transition">
             🎬 MovieWeb
         </a>
-        <nav class="space-x-6">
-            <a href="{{ url_for('home') }}" class="hover:text-blue-200 transition">🏠 Home</a>
-            <a href="{{ url_for('list_users') }}" class="hover:text-blue-200 transition">👥 Users</a>
-            <a href="{{ url_for('add_user') }}" class="hover:text-green-200 transition">➕ Add User</a>
+        <nav class="space-x-8 font-medium text-lg">
+            <a href="{{ url_for('home') }}" class="hover:text-yellow-300 transition">🏠 Home</a>
+            <a href="{{ url_for('list_users') }}" class="hover:text-yellow-300 transition">👥 Users</a>
+            <a href="{{ url_for('add_user') }}" class="hover:text-yellow-300 transition">➕ Add User</a>
         </nav>
     </div>
 </header>
@@ -34,13 +34,13 @@
 </div>
 
 <!-- Main Content -->
-<main class="flex-grow container mx-auto px-4 py-6">
+<main class="flex-grow container mx-auto px-4 py-8">
     {% block content %}{% endblock %}
 </main>
 
 <!-- Footer -->
-<footer class="bg-gray-800 text-white text-center py-4 mt-auto">
-    <p>&copy; {{ current_year }} MovieWeb App | Made with ❤️ by You</p>
+<footer class="bg-gradient-to-r from-purple-600 to-blue-600 text-white text-center py-6 mt-auto">
+    <p>&copy; {{ current_year }} MovieWeb App • Fueled by 🚀 popcorn power & code wizardry</p>
 </footer>
 
 </body>

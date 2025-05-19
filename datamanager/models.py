@@ -43,7 +43,8 @@ class Movie(db.Model):
         director (str): The name of the director of the movie (cannot be null).
         year (int): The release year of the movie (cannot be null).
         rating (float): The rating of the movie (cannot be null).
-        poster (str): The URL to the movie poster image. Optional field.
+        genre (str): The genre(s) of the movie (optional).
+        poster (str): The URL to the movie poster image (optional).
     """
     __tablename__ = 'movies'
 
@@ -52,7 +53,8 @@ class Movie(db.Model):
     director = db.Column(db.String(100), nullable=False)
     year = db.Column(db.Integer, nullable=False)
     rating = db.Column(db.Float, nullable=False)
+    genre = db.Column(db.String(100), nullable=True)  # Optional genre(s)
     poster = db.Column(db.String(255))  # Optional poster URL
 
     def __repr__(self):
-        return f"<Movie(id='{self.id}', name='{self.name}', year={self.year})>"
+        return f"<Movie(id='{self.id}', name='{self.name}', year={self.year}, genre='{self.genre}')>"

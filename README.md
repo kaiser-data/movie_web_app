@@ -1,71 +1,66 @@
-# 🎬 MovieWeb App
+\============================================================
+🎬  MovieWeb App – Masterschool Capstone Project
+================================================
 
-A simple Flask-based web application for managing users and their favorite movies using SQLite and OMDb API.
+Welcome to **MovieWeb**, a full‑stack Flask application built as part of my
+**Masterschool** software‑engineering program.  The goal is simple: give every
+cinephile a beautiful place to curate, rate and share their favourite movies.
 
-## ✨ Features
+## 📦  What’s inside?
 
-- List all users
-- View a user's favorite movies
-- Add, update, and delete movies
-- Uses OMDb API for real movie data
-- Flash messages for feedback
-- Custom error pages (404, 500)
-- Clean, responsive UI with CSS
+* **Flask 3.1**             – lightweight, battle‑tested web framework
+* **SQLAlchemy 2.0**        – ORM powering an SQLite backend
+* **Tailwind CSS**          – utility‑first styling for rapid UI iteration
+* **OMDb API integration**  – fetches posters, genres & ratings on the fly
+* **Modular architecture**  – clean separation of views, data layer and models
 
-## 🛠 Prerequisites
+## ✨  Key Features
 
-- Python 3.10+
-- Flask (`pip install flask`)
-- SQLAlchemy (`pip install sqlalchemy`)
-- Requests (`pip install requests`)
-- python-dotenv (`pip install python-dotenv`)
+1. **User Profiles** – create unlimited users, each with a personal watch‑list.
+2. **Smart Search**  – type a title, pull real data from the OMDb API in seconds.
+3. **CRUD Movies**   – add, edit or delete films; posters zoom on hover.
+4. **Flash Feedback**– instant success & error messages (no page reload needed).
+5. **Responsive UI** – gradient headers, card layouts & dark overlays for posters.
 
-## 🚀 Setup Instructions
+## 🚀  Quick‑start
 
-1. Clone or copy this repo
-2. Create `.env` from `.env.example` and set your OMDb API key
-3. Install dependencies:
+```bash
+# 1) Clone and enter
+$ git clone https://github.com/yourusername/movieweb.git
+$ cd movieweb
 
-pip install -r requirements.txt
+# 2) Create/activate a virtual env (optional but recommended)
+$ python -m venv .venv && source .venv/bin/activate
 
-4. Seed the database:
+# 3) Install requirements
+$ pip install -r requirements.txt
+
+# 4) Set environment variables
+$ cp .env.example .env
+# → add your OMDb API key + SECRET_KEY in the .env file
+
+# 5) Seed the database with sample data
+$ python seed.py
+
+# 6) Fire up the dev server 🎉
+$ python app.py  # then visit http://localhost:5000
+```
+
+## 🗄️  Project Structure
+
+```
+├─ app.py                 # Flask entry‑point / routes
+├─ datamanager/           # ORM models + SQLiteDataManager
+│  ├─ models.py
+│  ├─ sqlite_data_manager.py
+│  └─ data_manager_interface.py
+├─ templates/             # Jinja2 + Tailwind markup
+├─ static/                # Custom CSS (flash messages)
+├─ seed.py                # Demo DB seeding script
+├─ requirements.txt       # Python dependencies
+└─ LICENSE                # MIT license text
+```
 
 
-python seed.py
-Run the app:
-bash
 
-
-1
-python app.py
-Visit: http://localhost:5000
-
-📝 License
-MIT
-
----
-
-📄 File: `LICENSE`
-
-txt
-MIT License
-
-Copyright (c) 2025 Martin
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+© 2025 kaiser-data • Released under the MIT License

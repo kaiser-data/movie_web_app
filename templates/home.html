@@ -1,10 +1,35 @@
-<!-- templates/home.html -->
 {% extends "base.html" %}
-{% block title %}Home - MovieWeb App{% endblock %}
+{% block title %}Home – MovieWeb App{% endblock %}
+
 {% block content %}
-<section class="hero">
-    <h2>Welcome to MovieWeb!</h2>
-    <p>Your one-stop place to manage your favorite movies.</p>
-    <a href="{{ url_for('list_users') }}" class="btn">Browse Users</a>
+<!-- Hero Section -->
+<section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-10 shadow-lg">
+    <h1 class="text-4xl sm:text-5xl font-bold mb-4 flex items-center gap-2">
+        🎬 Welcome to <span class="text-yellow-300">MovieWeb</span>
+    </h1>
+    <p class="text-lg sm:text-xl mb-8 max-w-2xl">
+        Your personal hub to curate, rate & share your favourite movies.
+    </p>
+
+    <!-- How it works cards -->
+    <div class="grid gap-8 sm:grid-cols-3 mb-10">
+        <div class="bg-white/10 backdrop-blur-md p-6 rounded-lg">
+            <h3 class="text-xl font-semibold mb-2">👥 Create a profile</h3>
+            <p>Add yourself or friends so everyone gets their own watch-list.</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-md p-6 rounded-lg">
+            <h3 class="text-xl font-semibold mb-2">🎞️ Add movies</h3>
+            <p>Search the OMDb catalogue & import titles instantly—genre, poster & ratings included.</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-md p-6 rounded-lg">
+            <h3 class="text-xl font-semibold mb-2">⭐ Manage & share</h3>
+            <p>Edit ratings, update details or clean up lists anytime.</p>
+        </div>
+    </div>
+
+    <!-- Call to action -->
+    <a href="{{ url_for('list_users') }}" class="inline-block bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold py-3 px-6 rounded-md transition duration-200 shadow">
+        🚀 Get Started
+    </a>
 </section>
 {% endblock %}

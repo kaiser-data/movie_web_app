@@ -24,7 +24,7 @@ def fetch_movie_data(title):
         title (str): The movie title to search for
 
     Returns:
-        dict or None: Raw JSON response from OMDb or None if failed
+        dict: Raw JSON response from OMDb or error dict
     """
     if not API_KEY:
         logger.error("❌ OMDb API key is missing.")
@@ -61,24 +61,29 @@ def extract_movie_data(raw_data):
         raw_data (dict): Raw data from OMDb
 
     Returns:
-        dict: Processed movie data
+        dict: Processed movie data with keys matching ORM fields
     """
     try:
-        title = raw_data.get("Title", "N/A")
+        # Grab fields, providing sensible defaults
+        title    = raw_data.get("Title", "N/A")
         director = raw_data.get("Director", "N/A")
-        year = raw_data.get("Year", "N/A")
-        rating = float(raw_data.get("imdbRating", 0))
-        genre = raw_data.get("Genre", "N/A")
-        poster = raw_data.get("Poster", "")
+        year_str = raw_data.get("Year", "0")
+        genre    = raw_data.get("Genre", "N/A")
+        rating_str = raw_data.get("imdbRating", "0")
+        poster   = raw_data.get("Poster", "")
+
+        # Convert types
+        year   = int(year_str) if year_str.isdigit() else 0
+        rating = float(rating_str) if rating_str.replace('.', '', 1).isdigit() else 0.0
 
         return {
-            "ID": raw_data.get("imdbID", ""),
-            "Title": title,
-            "Director": director,
-            "Year": year,
-            "Rating": rating,
-            "Genre": genre,
-            "Poster": poster
+            "id":      raw_data.get("imdbID", ""),
+            "name":    title,
+            "director": director,
+            "year":    year,
+            "rating":  rating,
+            "genre":   genre,
+            "poster":  poster
         }
     except Exception as e:
         logger.exception(f"🔥 Error extracting data: {e}")
@@ -97,11 +102,8 @@ if __name__ == "__main__":
     if not movie_title:
         print("❗ No title entered. Exiting.")
     else:
-        # Step 1: Fetch movie data
         raw_data = fetch_movie_data(movie_title)
-
         if raw_data and "Error" not in raw_data:
-            # Step 2: Extract useful data
             movie_data = extract_movie_data(raw_data)
             print("\n✅ Movie Data Retrieved:\n")
             for key, value in movie_data.items():

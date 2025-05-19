@@ -1,27 +1,73 @@
-<!-- templates/update_movie.html -->
 {% extends "base.html" %}
-{% block title %}Update Movie{% endblock %}
+{% block title %}Update Movie – MovieWeb App{% endblock %}
+
 {% block content %}
-<div class="form-container">
-    <h2>Update Movie</h2>
-    <form method="POST">
-        <label for="name">Movie Name:</label>
-        <input type="text" id="name" name="name" value="{{ movie.name }}" required><br>
+<!-- Update‑Movie Card -->
+<div class="max-w-xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4">
+        <h2 class="text-2xl font-bold flex items-center gap-2">
+            ✏️ Update <span class="text-yellow-300">{{ movie.name }}</span>
+        </h2>
+        <p class="text-sm opacity-80">IMDB&nbsp;ID: {{ movie.id }}</p>
+    </div>
 
-        <label for="director">Director:</label>
-        <input type="text" id="director" name="director" value="{{ movie.director }}" required><br>
+    <!-- Form -->
+    <form method="POST" class="px-6 py-8 space-y-5">
+        <!-- Name -->
+        <div>
+            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Movie Name</label>
+            <input id="name" name="name" type="text" value="{{ movie.name }}" required
+                   class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
 
-        <label for="year">Year:</label>
-        <input type="number" id="year" name="year" value="{{ movie.year }}" required><br>
+        <!-- Director -->
+        <div>
+            <label for="director" class="block text-sm font-medium text-gray-700 mb-1">Director</label>
+            <input id="director" name="director" type="text" value="{{ movie.director }}" required
+                   class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
 
-        <label for="rating">Rating:</label>
-        <input type="number" step="0.1" id="rating" name="rating" value="{{ movie.rating }}" required><br>
+        <!-- Genre -->
+        <div>
+            <label for="genre" class="block text-sm font-medium text-gray-700 mb-1">Genre</label>
+            <input id="genre" name="genre" type="text" value="{{ movie.genre }}"
+                   class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="e.g. Action, Drama" />
+        </div>
 
-        <label for="poster">Poster URL:</label>
-        <input type="url" id="poster" name="poster" value="{{ movie.poster }}"><br>
+        <!-- Year & Rating in a flex row -->
+        <div class="flex gap-4">
+            <div class="flex-1">
+                <label for="year" class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                <input id="year" name="year" type="number" value="{{ movie.year }}" required
+                       class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div class="flex-1">
+                <label for="rating" class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                <input id="rating" name="rating" type="number" step="0.1" value="{{ movie.rating }}" required
+                       class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+        </div>
 
-        <button type="submit" class="btn">Update Movie</button>
+        <!-- Poster URL -->
+        <div>
+            <label for="poster" class="block text-sm font-medium text-gray-700 mb-1">Poster URL</label>
+            <input id="poster" name="poster" type="url" value="{{ movie.poster }}"
+                   class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="https://example.com/poster.jpg" />
+        </div>
+
+        <!-- Submit -->
+        <button type="submit"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200">
+            💾 Save Changes
+        </button>
     </form>
-    <p><a href="{{ url_for('user_movies', user_id=user_id) }}" class="back-link">← Back to Movies</a></p>
+</div>
+
+<!-- Back link -->
+<div class="text-center mt-6">
+    <a href="{{ url_for('user_movies', user_id=user.id) }}" class="text-blue-600 hover:underline">← Back to Movies</a>
 </div>
 {% endblock %}

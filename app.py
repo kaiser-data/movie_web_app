@@ -12,23 +12,26 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
+# Secret key for session management / flash messages
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret")
 
 # Setup database URI
 base_dir = os.path.abspath(os.path.dirname(__file__))
+# SQLite database path
 db_path = os.path.join(base_dir, 'data', 'movies.sqlite')
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize database
+# Initialize database object
 db.init_app(app)
 
 # Create tables inside app context
 with app.app_context():
     db.create_all()
 
-# Initialize data manager
-data_manager = SQLiteDataManager(app, db)
+# Initialize data manager with the actual URI
+# Pass the URI string so the manager can reconfigure SQLAlchemy
+data_manager = SQLiteDataManager(app, app.config['SQLALCHEMY_DATABASE_URI'])
 
 # Inject current year into templates
 @app.context_processor
@@ -90,40 +93,48 @@ def add_user():
     return render_template("add_user.html")
 
 
-@app.route('/users/<int:user_id>/add_movie', methods=['GET', 'POST'])
+@app.route("/users/<int:user_id>/add_movie", methods=["GET", "POST"])
 def add_movie(user_id):
-    """Add a movie to a user's list via OMDb"""
+    """Add a movie to a user's list via OMDb."""
     user = data_manager.get_user(user_id)
     if not user:
         flash("User not found.", "error")
-        return redirect(url_for('list_users'))
+        return redirect(url_for("list_users"))
 
-    if request.method == 'POST':
-        title = request.form.get('title')
+    if request.method == "POST":
+        title = request.form.get("title")
         if not title:
             flash("Movie title is required!", "error")
-            return redirect(url_for('add_movie', user_id=user_id))
+            return redirect(url_for("add_movie", user_id=user_id))
 
-        # Fetch from OMDb API
+        # 1) Fetch from OMDb
         raw_data = fetch_movie_data(title)
         if not raw_data or "Error" in raw_data:
             flash(raw_data.get("Error", "Movie not found."), "error")
-            return render_template('add_movie.html', user=user)
+            return render_template("add_movie.html", user=user)
 
+        # 2) Extract and normalize
         movie_data = extract_movie_data(raw_data)
 
-        # Ensure we have all required fields including 'ID'
-        success = data_manager.add_movie(movie_data)
+        # 3) Try to insert into DB (True = new insert, False = already exists)
+        is_new = data_manager.add_movie(movie_data)
 
-        if success:
-            data_manager.add_favorite_movie(user_id, movie_data["ID"])
-            flash("✅ Movie added successfully!", "success")
-            return redirect(url_for('user_movies', user_id=user_id))
-        else:
-            flash("❌ Failed to add movie.", "error")
-            return redirect(url_for('user_movies', user_id=user_id))
+        # 4) Link to this user's favorites (if not already linked)
+        try:
+            data_manager.add_favorite_movie(user_id, movie_data["id"])
+            if is_new:
+                flash("✅ Movie added and linked to your list!", "success")
+            else:
+                flash("ℹ️ Movie was already in the database—linked to your list.", "info")
+        except ValueError:
+            flash("⚠️ Movie is already in your favorites.", "error")
 
-    return render_template('add_movie.html', user=user)
+        return redirect(url_for("user_movies", user_id=user_id))
+
+    # GET request → render search form
+    return render_template("add_movie.html", user=user)
+
+
 
 @app.route('/users/<int:user_id>/update_movie/<string:movie_id>', methods=['GET', 'POST'])
 def update_movie(user_id, movie_id):
@@ -141,12 +152,12 @@ def update_movie(user_id, movie_id):
     if request.method == 'POST':
         try:
             updated_data = {
-                'name': request.form.get('name') or movie.name,
+                'name':     request.form.get('name')     or movie.name,
                 'director': request.form.get('director') or movie.director,
-                'year': int(request.form.get('year') or movie.year),
-                'rating': float(request.form.get('rating') or movie.rating),
-                'genre': request.form.get('genre') or movie.genre,
-                'poster': request.form.get('poster') or movie.poster
+                'genre':    request.form.get('genre')    or movie.genre,
+                'year':     int(request.form.get('year') or movie.year),
+                'rating':   float(request.form.get('rating') or movie.rating),
+                'poster':   request.form.get('poster')   or movie.poster
             }
             data_manager.update_movie(movie_id, updated_data)
             flash("✅ Movie updated successfully!", "success")
@@ -155,7 +166,13 @@ def update_movie(user_id, movie_id):
             flash(f"❌ Error updating movie: {e}", "error")
             return redirect(url_for('user_movies', user_id=user_id))
 
-    return render_template('update_movie.html', user=user, movie=movie)
+    # Render with user_id context so template back-link works
+    return render_template(
+        'update_movie.html',
+        user=user,
+        movie=movie,
+        user_id=user_id
+    )
 
 
 @app.route('/users/<int:user_id>/delete_movie/<string:movie_id>')
@@ -182,5 +199,5 @@ def internal_server_error(e):
 
 
 if __name__ == "__main__":
-    print("✅ Running Flask App...")
-    app.run(host="0.0.0.0", port=5002, debug=True, use_reloader=False)
+    print("✅ Running Flask App... on port 5000")
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)

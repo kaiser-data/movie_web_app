@@ -1,220 +1,164 @@
 # datamanager/sqlite_data_manager.py
+"""SQLite‑backed implementation of the DataManagerInterface.
+
+This module centralises **all** database operations so the rest of the
+application never touches SQLAlchemy sessions directly.  Each public method:
+
+1. Executes inside the **same request‑bound session** (no extra
+   ``with app.app_context()`` wrappers), so returned objects remain attached.
+2. Provides short, readable docstrings and defensive checks that raise
+   ``ValueError`` with clear messages when entities aren’t found.
+3. Uses *eager loading* (``selectinload``) sparingly to avoid
+   ``DetachedInstanceError`` on relationship access.
+"""
+
+from __future__ import annotations
+
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 from .data_manager_interface import DataManagerInterface
-from .models import db, User, Movie
+from .models import Movie, User, db
 
 
 class SQLiteDataManager(DataManagerInterface):
-    """
-    A class that implements the DataManagerInterface using SQLite as the database backend.
-    Handles user and movie data using SQLAlchemy ORM with proper error handling.
+    """High‑level façade for CRUD + relationship ops on **User** / **Movie**.
+
+    Parameters
+    ----------
+    app : Flask
+        The Flask application instance – needed only so we can set the
+        SQLAlchemy URI here (keeping config in one place).
+    db_uri : str
+        A fully‑qualified SQLAlchemy connection string (e.g. ``sqlite:///…``).
     """
 
-    def __init__(self, app, db_uri):
-        """
-        Initialize the SQLiteDataManager with a Flask app and database URI.
+    # ------------------------------------------------------------------
+    # Construction helpers
+    # ------------------------------------------------------------------
 
-        Args:
-            app (Flask): The Flask application instance.
-            db_uri (str): The database URI for SQLite.
-        """
+    def __init__(self, app, db_uri: str) -> None:
         self.app = app
-        self.db_uri = db_uri
+        app.config.update(
+            SQLALCHEMY_DATABASE_URI=db_uri,
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        )
 
-        # Configure the Flask app with the correct database settings
-        app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # ------------------------------------------------------------------
+    # User helpers
+    # ------------------------------------------------------------------
 
-    def get_all_users(self):
+    def get_all_users(self) -> list[User]:
+        """Return *all* users with their ``favorite_movies`` collection loaded."""
+        return (
+            db.session.query(User)
+            .options(selectinload(User.favorite_movies))
+            .all()
+        )
+
+    def get_user(self, user_id: int) -> User | None:
+        """Return a single user (or ``None``) with favorites pre‑loaded."""
+        return (
+            db.session.query(User)
+            .options(selectinload(User.favorite_movies))
+            .get(user_id)
+        )
+
+    def add_user(self, user_data: dict) -> None:
+        """Insert a new ``User`` row.
+
+        Expects ``user_data`` to contain at least ``id`` and ``name`` keys.
         """
-        Retrieve all users from the database.
+        db.session.add(User(id=user_data["id"], name=user_data["name"]))
+        db.session.commit()
 
-        Returns:
-            list: A list of User objects.
-        """
-        with self.app.app_context():
-            return db.session.query(User).all()
+    def update_user(self, user_id: int, updated_data: dict) -> None:
+        """Patch an existing user in‑place."""
+        user = db.session.get(User, user_id)
+        if not user:
+            raise ValueError(f"User with ID {user_id} does not exist.")
+        user.name = updated_data.get("name", user.name)
+        db.session.commit()
 
-    def get_user(self, user_id):
-        """
-        Retrieve a user by their ID.
+    def delete_user(self, user_id: int) -> None:
+        """Delete a user *and* cascade/remove any association rows."""
+        user = db.session.get(User, user_id)
+        if not user:
+            raise ValueError(f"User with ID {user_id} does not exist.")
+        db.session.delete(user)
+        db.session.commit()
 
-        Args:
-            user_id (int): The ID of the user to retrieve.
+    # ------------------------------------------------------------------
+    # Movie helpers
+    # ------------------------------------------------------------------
 
-        Returns:
-            User: The user object if found, otherwise None.
-        """
-        with self.app.app_context():
-            return User.query.get(user_id)
+    def get_movie(self, movie_id: str) -> Movie | None:
+        """Lightweight primary‑key lookup (no relationships)."""
+        return db.session.get(Movie, str(movie_id))
 
-    def get_user_movies(self, user_id):
-        """
-        Retrieve all movies associated with a specific user.
+    def get_user_movies(self, user_id: int) -> list[Movie]:
+        """Return a user’s *current* favourites list (may be empty)."""
+        user = self.get_user(user_id)
+        return user.favorite_movies if user else []
 
-        Args:
-            user_id (int): The ID of the user.
+    def add_movie(self, movie_data: dict) -> bool:
+        """Insert a new movie row; return **True** if created, **False** if duplicate."""
+        if db.session.get(Movie, str(movie_data["id"])):
+            return False  # Existing row – nothing to do
 
-        Returns:
-            list: A list of Movie objects associated with the user.
-        """
-        with self.app.app_context():
-            user = db.session.query(User).get(user_id)
-            if user:
-                return user.favorite_movies
-            return []
-
-    def add_user(self, user_data):
-        """
-        Add a new user to the database.
-
-        Args:
-            user_data (dict): A dictionary containing user data (id, name).
-
-        Raises:
-            ValueError: If user data is invalid or missing.
-        """
-        with self.app.app_context():
-            user = User(
-                id=user_data.get('id'),
-                name=user_data.get('name')
-            )
-            db.session.add(user)
-            db.session.commit()
-
-    def add_movie(self, movie_data):
-        """
-        Add a new movie to the database.
-
-        Args:
-            movie_data (dict): A dictionary containing movie data (id, name, director, year, rating, poster).
-
-        Raises:
-            ValueError: If movie data is invalid or missing.
-        """
-        with self.app.app_context():
-            movie = Movie(
-                id=movie_data.get('id'),  # Accepts string IDs like 'tt0133093' (OMDb format)
-                name=movie_data.get('name'),
-                director=movie_data.get('director'),
-                year=movie_data.get('year'),
-                rating=movie_data.get('rating'),
-                poster=movie_data.get('poster')  # Optional field
-            )
+        movie = Movie(
+            id=movie_data["id"],
+            name=movie_data["name"],
+            director=movie_data["director"],
+            year=movie_data["year"],
+            rating=movie_data["rating"],
+            genre=movie_data["genre"],
+            poster=movie_data["poster"],
+        )
+        try:
             db.session.add(movie)
             db.session.commit()
+            return True
+        except IntegrityError:
+            # Rare race‑condition fallback (row inserted by another request)
+            db.session.rollback()
+            return False
 
-    def update_movie(self, movie_id, updated_data):
-        """
-        Update an existing movie in the database.
+    def update_movie(self, movie_id: str, updated_data: dict) -> None:
+        """Update mutable fields on a movie row."""
+        movie = db.session.get(Movie, str(movie_id))
+        if not movie:
+            raise ValueError(f"Movie with ID {movie_id} does not exist.")
 
-        Args:
-            movie_id (str): The ID of the movie to update.
-            updated_data (dict): A dictionary containing updated movie data.
+        # Only overwrite when a value is provided – otherwise keep current
+        movie.name     = updated_data.get("name", movie.name)
+        movie.director = updated_data.get("director", movie.director)
+        movie.year     = updated_data.get("year", movie.year)
+        movie.rating   = updated_data.get("rating", movie.rating)
+        movie.genre    = updated_data.get("genre", movie.genre)
+        movie.poster   = updated_data.get("poster", movie.poster)
+        db.session.commit()
 
-        Raises:
-            ValueError: If the movie does not exist.
-        """
-        with self.app.app_context():
-            movie = db.session.query(Movie).filter_by(id=str(movie_id)).first()
-            if movie:
-                # Update fields only if provided
-                movie.name = updated_data.get('name', movie.name)
-                movie.director = updated_data.get('director', movie.director)
-                movie.year = updated_data.get('year', movie.year)
-                movie.rating = updated_data.get('rating', movie.rating)
-                movie.poster = updated_data.get('poster', movie.poster)
+    def delete_movie(self, movie_id: str) -> None:
+        """Hard‑delete a movie row (does **not** unlink existing favourites)."""
+        movie = db.session.get(Movie, str(movie_id))
+        if not movie:
+            raise ValueError(f"Movie with ID {movie_id} does not exist.")
+        db.session.delete(movie)
+        db.session.commit()
 
-                db.session.commit()
-            else:
-                raise ValueError(f"Movie with ID {movie_id} does not exist.")
+    # ------------------------------------------------------------------
+    # Linking helpers
+    # ------------------------------------------------------------------
 
-    def delete_movie(self, movie_id):
-        """
-        Delete a movie from the database.
+    def add_favorite_movie(self, user_id: int, movie_id: str) -> None:
+        """Associate an existing movie with a user’s favourites list."""
+        user  = db.session.get(User, user_id)
+        movie = db.session.get(Movie, str(movie_id))
+        if not user or not movie:
+            raise ValueError("User or Movie not found.")
 
-        Args:
-            movie_id (str): The ID of the movie to delete.
-
-        Raises:
-            ValueError: If the movie does not exist.
-        """
-        with self.app.app_context():
-            movie = db.session.query(Movie).filter_by(id=str(movie_id)).first()
-            if movie:
-                db.session.delete(movie)
-                db.session.commit()
-            else:
-                raise ValueError(f"Movie with ID {movie_id} does not exist.")
-
-    def get_movie_by_id(self, movie_id):
-        """
-        Retrieve a movie by its ID from the database.
-
-        Args:
-            movie_id (str): The ID of the movie to retrieve.
-
-        Returns:
-            Movie: The movie object if found, otherwise None.
-        """
-        with self.app.app_context():
-            return db.session.query(Movie).filter_by(id=str(movie_id)).first()
-
-    def delete_user(self, user_id):
-        """
-        Delete a user from the database.
-
-        Args:
-            user_id (int): The ID of the user to delete.
-
-        Raises:
-            ValueError: If the user does not exist.
-        """
-        with self.app.app_context():
-            user = db.session.query(User).get(user_id)
-            if user:
-                db.session.delete(user)
-                db.session.commit()
-            else:
-                raise ValueError(f"User with ID {user_id} does not exist.")
-
-    def update_user(self, user_id, updated_data):
-        """
-        Update an existing user in the database.
-
-        Args:
-            user_id (int): The ID of the user to update.
-            updated_data (dict): A dictionary containing updated user data.
-
-        Raises:
-            ValueError: If the user does not exist.
-        """
-        with self.app.app_context():
-            user = db.session.query(User).get(user_id)
-            if user:
-                user.name = updated_data.get('name', user.name)
-                db.session.commit()
-            else:
-                raise ValueError(f"User with ID {user_id} does not exist.")
-
-    def add_favorite_movie(self, user_id, movie_id):
-        """
-        Add a movie to a user's favorites.
-
-        Args:
-            user_id (int): The ID of the user.
-            movie_id (str): The ID of the movie (string format for OMDb compatibility).
-
-        Raises:
-            ValueError: If the user or movie does not exist.
-        """
-        with self.app.app_context():
-            user = db.session.query(User).get(user_id)
-            movie = db.session.query(Movie).filter_by(id=str(movie_id)).first()
-
-            if user and movie:
-                if movie not in user.favorite_movies:
-                    user.favorite_movies.append(movie)
-                    db.session.commit()
-            else:
-                raise ValueError("User or Movie not found.")
+        # Relationship collections behave like normal Python lists
+        if movie not in user.favorite_movies:
+            user.favorite_movies.append(movie)
+            db.session.commit()
